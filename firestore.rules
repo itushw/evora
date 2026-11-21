@@ -1,0 +1,204 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function isNonEmptyString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalNumber(data, field, minVal, maxVal) {
+      return !(field in data) || (data[field] is number && data[field] >= minVal && data[field] <= maxVal);
+    }
+
+    function isValidCategory(cat) {
+      return cat in ['Tech', 'Music', 'Arts', 'College Fests', 'Workshops'];
+    }
+
+    function isValidHost(host) {
+      return host is map
+        && host.keys().hasAll(['name', 'organization', 'role', 'contactEmail'])
+        && host.keys().hasOnly(['name', 'organization', 'role', 'contactEmail'])
+        && isNonEmptyString(host.name, 1, 100)
+        && isNonEmptyString(host.organization, 1, 120)
+        && isNonEmptyString(host.role, 1, 80)
+        && isNonEmptyString(host.contactEmail, 3, 160);
+    }
+
+    function isValidUserCreate(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'provider', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'provider', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && isNonEmptyString(data.displayName, 1, 100)
+        && isNonEmptyString(data.email, 3, 160)
+        && data.provider in ['password', 'google']
+        && isNonEmptyString(data.createdAt, 10, 40)
+        && isNonEmptyString(data.updatedAt, 10, 40);
+    }
+
+    function isValidUserUpdate(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly(['displayName', 'provider', 'updatedAt'])
+        && newData.uid == oldData.uid
+        && newData.email == oldData.email
+        && newData.createdAt == oldData.createdAt
+        && isNonEmptyString(newData.displayName, 1, 100)
+        && newData.provider in ['password', 'google']
+        && isNonEmptyString(newData.updatedAt, 10, 40);
+    }
+
+    function isValidEventDoc(data, eventId) {
+      return data.keys().hasAll([
+          'id', 'slug', 'title', 'subtitle', 'category', 'city',
+          'venueName', 'venueAddress', 'dateLabel', 'isoDate',
+          'timeLabel', 'timezone', 'coverImage', 'coverCaption',
+          'description', 'host', 'schedule', 'tiers',
+          'refundPolicySummary', 'creatorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'slug', 'title', 'subtitle', 'category', 'city',
+          'venueName', 'venueAddress', 'dateLabel', 'isoDate',
+          'timeLabel', 'timezone', 'coverImage', 'coverCaption',
+          'description', 'host', 'schedule', 'tiers',
+          'refundPolicySummary', 'creatorUid', 'createdAt', 'updatedAt',
+          'placeId', 'latitude', 'longitude', 'featured'
+        ])
+        && data.id == eventId
+        && isNonEmptyString(data.slug, 2, 120)
+        && isNonEmptyString(data.title, 2, 160)
+        && isNonEmptyString(data.subtitle, 2, 320)
+        && isValidCategory(data.category)
+        && isNonEmptyString(data.city, 2, 80)
+        && isNonEmptyString(data.venueName, 2, 160)
+        && isNonEmptyString(data.venueAddress, 2, 300)
+        && isNonEmptyString(data.dateLabel, 2, 60)
+        && isNonEmptyString(data.isoDate, 8, 20)
+        && isNonEmptyString(data.timeLabel, 2, 60)
+        && isNonEmptyString(data.timezone, 2, 20)
+        && isNonEmptyString(data.coverImage, 4, 300)
+        && isNonEmptyString(data.coverCaption, 2, 220)
+        && data.description is list && data.description.size() >= 1 && data.description.size() <= 12
+        && isValidHost(data.host)
+        && data.schedule is list && data.schedule.size() >= 1 && data.schedule.size() <= 20
+        && data.tiers is list && data.tiers.size() >= 1 && data.tiers.size() <= 10
+        && isNonEmptyString(data.refundPolicySummary, 2, 300)
+        && isNonEmptyString(data.creatorUid, 3, 128)
+        && isNonEmptyString(data.createdAt, 10, 40)
+        && isNonEmptyString(data.updatedAt, 10, 40)
+        && isValidOptionalString(data, 'placeId', 200)
+        && isValidOptionalNumber(data, 'latitude', -90, 90)
+        && isValidOptionalNumber(data, 'longitude', -180, 180)
+        && (!('featured' in data) || data.featured is bool);
+    }
+
+    function isValidOrderCreate(data, orderId) {
+      return data.keys().hasAll([
+          'orderId', 'intentId', 'userId', 'status', 'createdAt',
+          'eventId', 'eventSlug', 'eventTitle', 'eventDateLabel',
+          'eventTimeLabel', 'venueName', 'venueAddress', 'city',
+          'tierId', 'tierName', 'quantity', 'buyerName', 'buyerEmail',
+          'buyerPhone', 'paymentReference', 'currency',
+          'subtotalPaise', 'platformFeePaise', 'totalPaise', 'passes'
+        ])
+        && data.keys().hasOnly([
+          'orderId', 'intentId', 'userId', 'status', 'createdAt',
+          'eventId', 'eventSlug', 'eventTitle', 'eventDateLabel',
+          'eventTimeLabel', 'venueName', 'venueAddress', 'city',
+          'tierId', 'tierName', 'quantity', 'buyerName', 'buyerEmail',
+          'buyerPhone', 'paymentReference', 'currency',
+          'subtotalPaise', 'platformFeePaise', 'totalPaise', 'passes'
+        ])
+        && data.orderId == orderId
+        && isNonEmptyString(data.intentId, 4, 60)
+        && data.userId == request.auth.uid
+        && data.status == 'confirmed'
+        && isNonEmptyString(data.createdAt, 10, 40)
+        && isNonEmptyString(data.eventId, 3, 128)
+        && isNonEmptyString(data.eventSlug, 2, 120)
+        && isNonEmptyString(data.eventTitle, 2, 160)
+        && isNonEmptyString(data.eventDateLabel, 2, 60)
+        && isNonEmptyString(data.eventTimeLabel, 2, 60)
+        && isNonEmptyString(data.venueName, 2, 160)
+        && isNonEmptyString(data.venueAddress, 2, 300)
+        && isNonEmptyString(data.city, 2, 80)
+        && isNonEmptyString(data.tierId, 2, 120)
+        && isNonEmptyString(data.tierName, 1, 100)
+        && data.quantity is int && data.quantity >= 1 && data.quantity <= 10
+        && isNonEmptyString(data.buyerName, 1, 100)
+        && isNonEmptyString(data.buyerEmail, 3, 160)
+        && data.buyerPhone is string && data.buyerPhone.size() <= 30
+        && isNonEmptyString(data.paymentReference, 2, 60)
+        && data.currency == 'INR'
+        && data.subtotalPaise is int && data.subtotalPaise >= 0 && data.subtotalPaise <= 100000000
+        && data.platformFeePaise is int && data.platformFeePaise >= 0 && data.platformFeePaise <= 10000000
+        && data.totalPaise is int && data.totalPaise == data.subtotalPaise + data.platformFeePaise
+        && data.passes is list && data.passes.size() == data.quantity;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserCreate(request.resource.data, userId);
+      allow update: if isOwner(userId)
+        && isValidUserUpdate(request.resource.data, resource.data);
+      allow delete: if false;
+    }
+
+    match /events/{eventId} {
+      allow get, list: if true;
+      allow create: if isSignedIn()
+        && isValidId(eventId)
+        && request.resource.data.creatorUid == request.auth.uid
+        && isValidEventDoc(request.resource.data, eventId);
+      allow update: if isSignedIn()
+        && isValidEventDoc(request.resource.data, eventId)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.slug == resource.data.slug
+        && request.resource.data.creatorUid == resource.data.creatorUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          resource.data.creatorUid == request.auth.uid
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tiers', 'updatedAt'])
+            && request.resource.data.tiers.size() == resource.data.tiers.size()
+          )
+        );
+      allow delete: if isSignedIn() && resource.data.creatorUid == request.auth.uid;
+    }
+
+    match /orders/{orderId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(orderId)
+        && isValidOrderCreate(request.resource.data, orderId);
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'confirmed'
+        && request.resource.data.status == 'refunded'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'refundedAt'])
+        && isNonEmptyString(request.resource.data.refundedAt, 10, 40);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

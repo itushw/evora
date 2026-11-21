@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --evora-primary: #000000;
+  --evora-on-primary: #ffffff;
+  --evora-ink: #000000;
+  --evora-body: #5e5e5e;
+  --evora-mute: #afafaf;
+  --evora-hairline-mid: #4b4b4b;
+  --evora-canvas: #ffffff;
+  --evora-canvas-soft: #efefef;
+  --evora-canvas-softer: #f3f3f3;
+  --evora-surface-pressed: #e2e2e2;
+  --evora-black-elevated: #282828;
+  --evora-danger: #b42318;
+  --evora-success: #166534;
+}
+
+@layer base {
+  html {
+    background-color: var(--evora-canvas);
+    color: var(--evora-ink);
+    font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "lnum" 1, "locl" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--evora-canvas);
+    color: var(--evora-ink);
+    font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: inherit;
+    text-wrap: balance;
+  }
+
+  button, a, input, select, textarea {
+    font-family: inherit;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #000000;
+    outline-offset: 2px;
+  }
+}
+
+.font-mono-tabular {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums-clean {
+  font-variant-numeric: tabular-nums;
+}
+
+.display-xxl {
+  font-size: clamp(2.25rem, 4.6vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.12;
+}
+
+.display-xl {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+.display-md {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.editorial-prose {
+  max-width: 68ch;
+  color: #282828;
+  line-height: 1.65;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background-color: #ffffff;
+  }
+}

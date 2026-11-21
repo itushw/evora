@@ -1,0 +1,6 @@
+{
+  "name": "Luna",
+  "description": "Minimalist event ticketing platform with direct checkout, verified QR passes, and secure payment gateway processing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
