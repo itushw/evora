@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -18,6 +18,20 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { user, authReady, openAuthModal, signOutUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const isHome = location.pathname === '/';
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 28);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const showSeamlessHeroVeil = isHome && !scrolled && !mobileMenuOpen;
 
   const isActive = (path: string) => {
     if (path === '/events') {
@@ -33,8 +47,27 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#ffffff] text-[#000000]">
-      <header className="no-print sticky top-0 z-40 w-full bg-[#000000] text-[#ffffff]">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 md:px-8 h-16">
+      <header className="no-print sticky top-0 z-40 w-full text-[#ffffff]">
+        {/* Layer A: Seamless opaque-to-clear feathered top veil with masked frosted blur (homepage top only) */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 top-0 h-[156px] transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+            showSeamlessHeroVeil ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="absolute inset-0 glass-nav-hero-blur" />
+          <div className="absolute inset-0 glass-nav-hero-veil" />
+        </div>
+
+        {/* Layer B: Compact 64px dark frosted glass bar (scrolled, inner routes, or mobile menu open) */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 border-b border-white/15 glass-nav-scrolled transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+            showSeamlessHeroVeil ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+
+        <div className="relative z-10 mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 md:px-8 h-16">
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
@@ -56,7 +89,7 @@ export function Layout({ children }: LayoutProps) {
                   className={`whitespace-nowrap shrink-0 py-1 ${
                     active
                       ? 'text-[#ffffff] border-b border-[#ffffff]'
-                      : 'text-[#afafaf]'
+                      : 'text-[#e2e2e2]'
                   }`}
                 >
                   {item.label}
@@ -71,7 +104,7 @@ export function Layout({ children }: LayoutProps) {
                 <div className="hidden sm:flex items-center gap-2.5">
                   <Link
                     to="/passes"
-                    className="inline-flex items-center justify-center rounded-full border border-[#4b4b4b] bg-[#000000] px-4 py-2 text-xs font-medium text-[#ffffff] whitespace-nowrap"
+                    className="inline-flex items-center justify-center rounded-full border border-white/25 bg-black/35 px-4 py-2 text-xs font-medium text-[#ffffff] whitespace-nowrap"
                   >
                     {userLabel}
                   </Link>
@@ -101,7 +134,7 @@ export function Layout({ children }: LayoutProps) {
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-expanded={mobileMenuOpen}
               aria-label="Toggle navigation menu"
-              className="md:hidden inline-flex items-center justify-center h-10 w-10 border border-[#4b4b4b] bg-[#000000] text-[#ffffff] rounded-full"
+              className="md:hidden inline-flex items-center justify-center h-10 w-10 border border-white/25 bg-black/40 text-[#ffffff] rounded-full"
             >
               {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -109,7 +142,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         {mobileMenuOpen ? (
-          <div className="md:hidden border-t border-[#282828] bg-[#000000] px-6 py-6">
+          <div className="relative z-10 md:hidden border-t border-white/15 px-6 py-6">
             <nav className="flex flex-col gap-4">
               {NAV_LINKS.map((item) => (
                 <Link
@@ -117,15 +150,15 @@ export function Layout({ children }: LayoutProps) {
                   to={item.to}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`text-base font-medium py-1 ${
-                    isActive(item.to) ? 'text-[#ffffff]' : 'text-[#afafaf]'
+                    isActive(item.to) ? 'text-[#ffffff]' : 'text-[#e2e2e2]'
                   }`}
                 >
                   {item.label}
                 </Link>
               ))}
               {user ? (
-                <div className="mt-2 pt-4 border-t border-[#282828] flex items-center justify-between gap-3">
-                  <span className="text-sm text-[#afafaf] truncate">
+                <div className="mt-2 pt-4 border-t border-white/15 flex items-center justify-between gap-3">
+                  <span className="text-sm text-[#e2e2e2] truncate">
                     {user.displayName || user.email}
                   </span>
                   <button
@@ -156,7 +189,7 @@ export function Layout({ children }: LayoutProps) {
         ) : null}
       </header>
 
-      <main className="flex-1 w-full bg-[#ffffff]">{children}</main>
+      <main className="relative z-0 flex-1 w-full bg-[#ffffff]">{children}</main>
 
       <footer className="no-print w-full bg-[#000000] text-[#ffffff] mt-24">
         <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-16">

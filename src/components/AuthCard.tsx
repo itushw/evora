@@ -68,7 +68,7 @@ export function AuthCard({
   };
 
   return (
-    <div className="w-full rounded-2xl border border-[#e2e2e2] bg-[#ffffff] p-7 md:p-9">
+    <div className="w-full rounded-2xl glass-light border border-white/70 p-7 md:p-9">
       <div>
         <h2 className="display-md text-[#000000]">
           {heading || (mode === 'signin' ? 'Sign in to Evora' : 'Create your Evora account')}

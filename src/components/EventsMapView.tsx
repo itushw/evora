@@ -189,7 +189,7 @@ export function EventsMapView({ events }: EventsMapViewProps) {
           </GoogleMap>
 
           {resolving ? (
-            <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-[#e2e2e2] bg-[#ffffff] px-3.5 py-1.5 text-xs font-medium text-[#000000]">
+            <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/60 glass-light px-3.5 py-1.5 text-xs font-medium text-[#000000]">
               Locating event venues...
             </div>
           ) : null}
@@ -201,7 +201,7 @@ export function EventsMapView({ events }: EventsMapViewProps) {
 
       <aside className="lg:col-span-4 space-y-4">
         {selectedEvent ? (
-          <div className="overflow-hidden rounded-2xl border border-[#e2e2e2] bg-[#ffffff]">
+          <div className="overflow-hidden rounded-2xl border border-[#e2e2e2] glass-light">
             <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-[#e2e2e2] bg-[#f3f3f3]">
               <img
                 src={selectedEvent.coverImage}
@@ -214,7 +214,7 @@ export function EventsMapView({ events }: EventsMapViewProps) {
                   type="button"
                   onClick={() => setSelectedEventId(null)}
                   aria-label="Reset selected event"
-                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e2e2e2] bg-[#ffffff] text-[#000000]"
+                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 glass-light text-[#000000]"
                 >
                   <X size={14} aria-hidden="true" />
                 </button>
@@ -256,7 +256,7 @@ export function EventsMapView({ events }: EventsMapViewProps) {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-[#e2e2e2] bg-[#f3f3f3] p-5">
+        <div className="rounded-2xl border border-[#e2e2e2] glass-soft p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-[#5e5e5e] pb-3 border-b border-[#e2e2e2]">
             Venues in View ({events.length})
           </p>

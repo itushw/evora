@@ -150,189 +150,193 @@ export function EventsPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-            <div className="lg:col-span-5 relative">
-              <Search
-                size={16}
-                aria-hidden="true"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#000000]"
-              />
-              <label htmlFor="event-search" className="sr-only">
-                Search events
-              </label>
-              <input
-                id="event-search"
-                type="search"
-                value={query}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setQuery(val);
-                  updateUrlFilters({ q: val });
-                }}
-                placeholder="Search by fest, hackathon, venue, or college"
-                className="w-full rounded-lg bg-[#efefef] pl-11 pr-4 py-3 text-sm text-[#000000] placeholder:text-[#5e5e5e]"
-              />
-            </div>
-
-            <div className="lg:col-span-4">
-              <label htmlFor="city-filter" className="sr-only">
-                Filter by city
-              </label>
-              <select
-                id="city-filter"
-                value={city}
-                onChange={(e) => {
-                  setCity(e.target.value);
-                  updateUrlFilters({ city: e.target.value });
-                }}
-                className="w-full rounded-lg bg-[#efefef] px-4 py-3 text-sm text-[#000000]"
-              >
-                {cities.map((item) => (
-                  <option key={item} value={item}>
-                    {item === 'All' ? 'All cities' : item}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="lg:col-span-3">
-              <label htmlFor="sort-filter" className="sr-only">
-                Sort events
-              </label>
-              <select
-                id="sort-filter"
-                value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value);
-                  updateUrlFilters({ sort: e.target.value });
-                }}
-                className="w-full rounded-lg bg-[#efefef] px-4 py-3 text-sm text-[#000000]"
-              >
-                <option value="date">Soonest first</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-              </select>
-            </div>
-          </div>
-
-          <div
-            role="tablist"
-            aria-label="Filter by category"
-            className="mt-5 flex flex-wrap gap-2"
-          >
-            {CATEGORIES.map((item) => {
-              const selected = category === item;
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  onClick={() => {
-                    setCategory(item);
-                    updateUrlFilters({ category: item });
+          <div className="mt-8 rounded-2xl glass-soft border border-[#e2e2e2] p-4 md:p-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+              <div className="lg:col-span-5 relative">
+                <Search
+                  size={16}
+                  aria-hidden="true"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#000000]"
+                />
+                <label htmlFor="event-search" className="sr-only">
+                  Search events
+                </label>
+                <input
+                  id="event-search"
+                  type="search"
+                  value={query}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setQuery(val);
+                    updateUrlFilters({ q: val });
                   }}
-                  className={`px-4 py-2 text-xs font-medium rounded-full whitespace-nowrap ${
-                    selected
-                      ? 'bg-[#000000] text-[#ffffff]'
-                      : 'bg-[#efefef] text-[#000000]'
-                  }`}
+                  placeholder="Search by fest, hackathon, venue, or college"
+                  className="w-full rounded-lg bg-white/85 border border-black/10 pl-11 pr-4 py-3 text-sm text-[#000000] placeholder:text-[#5e5e5e]"
+                />
+              </div>
+
+              <div className="lg:col-span-4">
+                <label htmlFor="city-filter" className="sr-only">
+                  Filter by city
+                </label>
+                <select
+                  id="city-filter"
+                  value={city}
+                  onChange={(e) => {
+                    setCity(e.target.value);
+                    updateUrlFilters({ city: e.target.value });
+                  }}
+                  className="w-full rounded-lg bg-white/85 border border-black/10 px-4 py-3 text-sm text-[#000000]"
                 >
-                  {item}
-                </button>
-              );
-            })}
+                  {cities.map((item) => (
+                    <option key={item} value={item}>
+                      {item === 'All' ? 'All cities' : item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="lg:col-span-3">
+                <label htmlFor="sort-filter" className="sr-only">
+                  Sort events
+                </label>
+                <select
+                  id="sort-filter"
+                  value={sort}
+                  onChange={(e) => {
+                    setSort(e.target.value);
+                    updateUrlFilters({ sort: e.target.value });
+                  }}
+                  className="w-full rounded-lg bg-white/85 border border-black/10 px-4 py-3 text-sm text-[#000000]"
+                >
+                  <option value="date">Soonest first</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              role="tablist"
+              aria-label="Filter by category"
+              className="mt-4 pt-4 border-t border-[#e2e2e2] flex flex-wrap gap-2"
+            >
+              {CATEGORIES.map((item) => {
+                const selected = category === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => {
+                      setCategory(item);
+                      updateUrlFilters({ category: item });
+                    }}
+                    className={`px-4 py-2 text-xs font-medium rounded-full whitespace-nowrap ${
+                      selected
+                        ? 'bg-[#000000] text-[#ffffff]'
+                        : 'bg-white/80 border border-black/10 text-[#000000]'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1200px] px-6 md:px-8 py-14 md:py-16">
-        {errorMessage ? (
-          <div className="rounded-xl border border-[#b42318] bg-[#ffffff] p-5 text-sm text-[#b42318] mb-8">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        {events.length === 0 ? (
-          <div className="rounded-2xl border border-[#e2e2e2] bg-[#f3f3f3] p-12 text-center">
-            <h2 className="text-xl font-bold text-[#000000]">
-              No events match these filters
-            </h2>
-            <p className="mt-2 text-sm text-[#5e5e5e]">
-              Clear your search or try another city or category.
-            </p>
-            <div className="mt-6 flex justify-center gap-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery('');
-                  setCategory('All');
-                  setCity('All');
-                  setSort('date');
-                  setSearchParams(viewMode === 'map' ? { view: 'map' } : {}, { replace: true });
-                }}
-                className="bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-2.5 rounded-full"
-              >
-                Reset Filters
-              </button>
+      <section className="w-full bg-[#f3f3f3]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-14 md:py-16">
+          {errorMessage ? (
+            <div className="rounded-xl border border-[#b42318] glass-light p-5 text-sm text-[#b42318] mb-8">
+              {errorMessage}
             </div>
-          </div>
-        ) : viewMode === 'map' ? (
-          <EventsMapView events={events} />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {events.map((event) => {
-              const lowestPaise = Math.min(...event.tiers.map((t) => t.pricePaise));
-              const seatsRemaining = event.tiers.reduce((acc, t) => acc + t.remaining, 0);
-              return (
-                <article
-                  key={event.id}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-[#e2e2e2] bg-[#ffffff]"
+          ) : null}
+
+          {events.length === 0 ? (
+            <div className="rounded-2xl border border-[#e2e2e2] glass-light p-12 text-center">
+              <h2 className="text-xl font-bold text-[#000000]">
+                No events match these filters
+              </h2>
+              <p className="mt-2 text-sm text-[#5e5e5e]">
+                Clear your search or try another city or category.
+              </p>
+              <div className="mt-6 flex justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setCategory('All');
+                    setCity('All');
+                    setSort('date');
+                    setSearchParams(viewMode === 'map' ? { view: 'map' } : {}, { replace: true });
+                  }}
+                  className="bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-2.5 rounded-full"
                 >
-                  <Link to={`/events/${event.slug}`} className="block">
-                    <EventImage
-                      src={event.coverImage}
-                      alt={event.title}
-                      aspectClass="aspect-[16/10]"
-                      className="[&>div]:rounded-none [&>div]:border-0 [&>div]:border-b [&>div]:border-[#e2e2e2]"
-                    />
-                  </Link>
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          ) : viewMode === 'map' ? (
+            <EventsMapView events={events} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {events.map((event) => {
+                const lowestPaise = Math.min(...event.tiers.map((t) => t.pricePaise));
+                const seatsRemaining = event.tiers.reduce((acc, t) => acc + t.remaining, 0);
+                return (
+                  <article
+                    key={event.id}
+                    className="flex flex-col overflow-hidden rounded-2xl border border-[#e2e2e2] glass-light"
+                  >
+                    <Link to={`/events/${event.slug}`} className="block">
+                      <EventImage
+                        src={event.coverImage}
+                        alt={event.title}
+                        aspectClass="aspect-[16/10]"
+                        className="[&>div]:rounded-none [&>div]:border-0 [&>div]:border-b [&>div]:border-[#e2e2e2]"
+                      />
+                    </Link>
 
-                  <div className="flex flex-1 flex-col justify-between p-6">
-                    <div>
-                      <p className="text-xs text-[#5e5e5e]">
-                        {event.dateLabel} · {event.city} · {event.category}
-                      </p>
-                      <h2 className="mt-2.5 display-md text-[#000000]">
-                        <Link to={`/events/${event.slug}`}>{event.title}</Link>
-                      </h2>
-                      <p className="mt-2.5 text-sm text-[#5e5e5e] leading-relaxed">
-                        {event.subtitle}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 pt-5 border-t border-[#e2e2e2] flex items-center justify-between gap-4">
+                    <div className="flex flex-1 flex-col justify-between p-6">
                       <div>
-                        <p className="font-mono-tabular text-sm font-semibold text-[#000000]">
-                          {lowestPaise === 0 ? 'Free / Paid' : `From ${formatInr(lowestPaise)}`}
+                        <p className="text-xs text-[#5e5e5e]">
+                          {event.dateLabel} · {event.city} · {event.category}
                         </p>
-                        <p className="mt-0.5 text-xs text-[#5e5e5e] font-mono-tabular">
-                          {seatsRemaining} left · {event.venueName}
+                        <h2 className="mt-2.5 display-md text-[#000000]">
+                          <Link to={`/events/${event.slug}`}>{event.title}</Link>
+                        </h2>
+                        <p className="mt-2.5 text-sm text-[#5e5e5e] leading-relaxed">
+                          {event.subtitle}
                         </p>
                       </div>
-                      <Link
-                        to={`/events/${event.slug}`}
-                        className="inline-flex items-center justify-center bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-2.5 rounded-full whitespace-nowrap shrink-0"
-                      >
-                        Tickets
-                      </Link>
+
+                      <div className="mt-6 pt-5 border-t border-[#e2e2e2] flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-mono-tabular text-sm font-semibold text-[#000000]">
+                            {lowestPaise === 0 ? 'Free / Paid' : `From ${formatInr(lowestPaise)}`}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[#5e5e5e] font-mono-tabular">
+                            {seatsRemaining} left · {event.venueName}
+                          </p>
+                        </div>
+                        <Link
+                          to={`/events/${event.slug}`}
+                          className="inline-flex items-center justify-center bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-2.5 rounded-full whitespace-nowrap shrink-0"
+                        >
+                          Tickets
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
     </PageTransition>
   );

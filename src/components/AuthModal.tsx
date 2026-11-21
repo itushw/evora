@@ -22,7 +22,7 @@ export function AuthModal() {
       role="dialog"
       aria-modal="true"
       aria-label="Account sign in"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm px-4 py-6"
       onClick={closeAuthModal}
     >
       <div
@@ -33,7 +33,7 @@ export function AuthModal() {
           type="button"
           onClick={closeAuthModal}
           aria-label="Close sign in dialog"
-          className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e2e2e2] bg-[#ffffff] text-[#000000]"
+          className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e2e2e2] bg-white/85 text-[#000000]"
         >
           <X size={16} aria-hidden="true" />
         </button>
