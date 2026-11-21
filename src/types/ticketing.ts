@@ -74,6 +74,7 @@ export interface PaymentIntentResponse {
   totalPaise: number;
   expiresAt: string;
   paymentQrPayload: string | null;
+  intentToken?: string;
 }
 
 export interface IssuedTicketPass {

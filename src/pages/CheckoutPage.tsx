@@ -163,6 +163,7 @@ export function CheckoutPage() {
     try {
       const order = await confirmPayment({
         intentId: intent.intentId,
+        intentToken: intent.intentToken,
         utrReference: utrReference.trim() || undefined,
       });
       await persistConfirmedOrder(order, user.uid);
