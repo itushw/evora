@@ -37,7 +37,11 @@
         "isoDate": { "type": "string" },
         "timeLabel": { "type": "string" },
         "timezone": { "type": "string" },
-        "coverImage": { "type": "string" },
+        "coverImage": {
+          "type": "string",
+          "maxLength": 260000,
+          "description": "Relative asset path, HTTPS URL, or compressed JPEG/PNG/WebP data URL."
+        },
         "coverCaption": { "type": "string" },
         "description": { "type": "array", "items": { "type": "string" } },
         "host": {

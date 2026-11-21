@@ -71,7 +71,7 @@ export function Layout({ children }: LayoutProps) {
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-2xl font-bold tracking-[-0.03em] text-[#ffffff] whitespace-nowrap shrink-0"
+            className="font-display text-2xl font-bold tracking-[-0.03em] text-[#ffffff] whitespace-nowrap shrink-0"
           >
             evora
           </Link>
@@ -197,7 +197,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="md:col-span-5">
               <Link
                 to="/"
-                className="text-2xl font-bold tracking-[-0.03em] text-[#ffffff] inline-block"
+                className="font-display text-2xl font-bold tracking-[-0.03em] text-[#ffffff] inline-block"
               >
                 evora
               </Link>

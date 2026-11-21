@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface EventImageProps {
   src: string;
@@ -16,6 +16,10 @@ export function EventImage({
   className = '',
 }: EventImageProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   return (
     <figure className={`m-0 w-full ${className}`}>

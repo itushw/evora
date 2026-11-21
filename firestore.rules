@@ -31,6 +31,21 @@ service cloud.firestore {
       return cat in ['Tech', 'Music', 'Arts', 'College Fests', 'Workshops'];
     }
 
+    function isValidCoverImage(val) {
+      return val is string
+        && val.size() >= 8
+        && val.size() <= 260000
+        && (
+          (val.size() >= 12 && val[0:12] == '/src/assets/')
+          || val[0:8] == 'https://'
+          || (val.size() >= 24 && (
+            val[0:23] == 'data:image/jpeg;base64,'
+            || val[0:22] == 'data:image/png;base64,'
+            || val[0:23] == 'data:image/webp;base64,'
+          ))
+        );
+    }
+
     function isValidHost(host) {
       return host is map
         && host.keys().hasAll(['name', 'organization', 'role', 'contactEmail'])
@@ -90,7 +105,7 @@ service cloud.firestore {
         && isNonEmptyString(data.isoDate, 8, 20)
         && isNonEmptyString(data.timeLabel, 2, 60)
         && isNonEmptyString(data.timezone, 2, 20)
-        && isNonEmptyString(data.coverImage, 4, 300)
+        && isValidCoverImage(data.coverImage)
         && isNonEmptyString(data.coverCaption, 2, 220)
         && data.description is list && data.description.size() >= 1 && data.description.size() <= 12
         && isValidHost(data.host)

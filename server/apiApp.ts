@@ -166,7 +166,7 @@ function isOriginAllowed(origin: string): boolean {
 
 export function createApiApp(): Express {
   const app = express();
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '2mb' }));
 
   // CORS support for custom production domains (e.g. https://evr.browns.co.in) calling /api/*
   app.use('/api', (req, res, next) => {
@@ -395,7 +395,17 @@ export function createApiApp(): Express {
       isoDate: body.isoDate.trim(),
       timeLabel: body.timeLabel?.trim() || '10:00 to 18:00',
       timezone: body.timezone?.trim() || 'IST',
-      coverImage: body.coverImage || '/src/assets/images/real_hackathon_main.jpg',
+      coverImage:
+        typeof body.coverImage === 'string' &&
+        body.coverImage.length >= 8 &&
+        body.coverImage.length <= 260_000 &&
+        (body.coverImage.startsWith('/src/assets/') ||
+          body.coverImage.startsWith('https://') ||
+          body.coverImage.startsWith('data:image/jpeg;base64,') ||
+          body.coverImage.startsWith('data:image/png;base64,') ||
+          body.coverImage.startsWith('data:image/webp;base64,'))
+          ? body.coverImage
+          : '/src/assets/images/real_hackathon_main.jpg',
       coverCaption: `${body.venueName.trim()}, ${body.city.trim()}.`,
       description: (body.description || '')
         .split(/\n+/)

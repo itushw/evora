@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Upload, X } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { AuthCard } from '../components/AuthCard.tsx';
 import {
@@ -10,6 +11,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { AVAILABLE_COVERS } from '../data/seedEvents.ts';
 import { createEvent } from '../lib/api.ts';
 import { persistHostedEvent } from '../lib/firestoreStore.ts';
+import { processCoverPhotoFile, type ProcessedCoverPhoto } from '../lib/imageUpload.ts';
 import { EVENT_CATEGORIES, type EventCategory } from '../types/ticketing.ts';
 
 interface DraftTier {
@@ -34,10 +36,15 @@ export function HostEventPage() {
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [verifiedVenueLabel, setVerifiedVenueLabel] = useState('');
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isoDate, setIsoDate] = useState('2026-12-26');
   const [timeLabel, setTimeLabel] = useState('09:30 to 18:30');
   const [timezone, setTimezone] = useState('IST');
   const [coverImage, setCoverImage] = useState(AVAILABLE_COVERS[0].url);
+  const [customPhoto, setCustomPhoto] = useState<ProcessedCoverPhoto | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
   const [description, setDescription] = useState('');
   const [hostName, setHostName] = useState('');
   const [hostOrganization, setHostOrganization] = useState('');
@@ -95,6 +102,43 @@ export function HostEventPage() {
     setTiers((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handlePhotoFile = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoError('');
+    setUploadingPhoto(true);
+    try {
+      const processed = await processCoverPhotoFile(file);
+      setCustomPhoto(processed);
+      setCoverImage(processed.dataUrl);
+    } catch (err: unknown) {
+      setPhotoError(err instanceof Error ? err.message : 'Unable to process this image.');
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePhotoInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    void handlePhotoFile(e.target.files?.[0]);
+  };
+
+  const handlePhotoDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingPhoto(false);
+    void handlePhotoFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handleRemoveCustomPhoto = () => {
+    setCustomPhoto(null);
+    setPhotoError('');
+    setCoverImage(AVAILABLE_COVERS[0].url);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user) return;
@@ -150,32 +194,33 @@ export function HostEventPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1040px] px-6 md:px-8 py-14 md:py-16">
-        {!authReady ? (
-          <p className="text-sm text-[#5e5e5e]">Checking your account...</p>
-        ) : !user ? (
-          <div className="mx-auto max-w-md">
-            <AuthCard
-              heading="Sign in to host an event"
-              subheading="Create an Evora account or sign in to publish listings and manage your campus event."
-            />
-          </div>
-        ) : (
-          <>
-            {errorBanner ? (
-              <div
-                role="alert"
-                className="mb-8 border border-[#b42318] bg-[#ffffff] p-5 text-sm text-[#b42318] rounded-xl"
-              >
-                {errorBanner}
-              </div>
-            ) : null}
+      <section className="w-full bg-[#f3f3f3]">
+        <div className="mx-auto max-w-[1040px] px-6 md:px-8 py-14 md:py-16">
+          {!authReady ? (
+            <p className="text-sm text-[#5e5e5e]">Checking your account...</p>
+          ) : !user ? (
+            <div className="mx-auto max-w-md">
+              <AuthCard
+                heading="Sign in to host an event"
+                subheading="Create an Evora account or sign in to publish listings and manage your campus event."
+              />
+            </div>
+          ) : (
+            <>
+              {errorBanner ? (
+                <div
+                  role="alert"
+                  className="mb-8 border border-[#b42318] glass-light p-5 text-sm text-[#b42318] rounded-xl"
+                >
+                  {errorBanner}
+                </div>
+              ) : null}
 
-            <form onSubmit={handleSubmit} className="space-y-12">
-              <div className="border border-[#e2e2e2] bg-[#ffffff] p-7 md:p-10 space-y-6 rounded-2xl">
-                <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
-                  1. Event details
-                </h2>
+              <form onSubmit={handleSubmit} className="space-y-10">
+                <div className="border border-[#e2e2e2] glass-light p-7 md:p-10 space-y-6 rounded-2xl">
+                  <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
+                    1. Event details
+                  </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="md:col-span-2">
@@ -336,40 +381,146 @@ export function HostEventPage() {
                 </div>
               </div>
 
-              <div className="border border-[#e2e2e2] bg-[#ffffff] p-7 md:p-10 space-y-6 rounded-2xl">
-                <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
-                  2. Event cover photo
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {AVAILABLE_COVERS.map((item) => {
-                    const selected = coverImage === item.url;
-                    return (
-                      <button
-                        key={item.url}
-                        type="button"
-                        onClick={() => setCoverImage(item.url)}
-                        className={`text-left border p-2 rounded-xl ${
-                          selected
+                <div className="border border-[#e2e2e2] glass-light p-7 md:p-10 space-y-6 rounded-2xl">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 pb-4 border-b border-[#e2e2e2]">
+                    <h2 className="text-lg font-bold text-[#000000]">
+                      2. Event cover photo
+                    </h2>
+                    <span className="text-xs text-[#5e5e5e]">
+                      Upload your own poster or photo, or pick a preset below
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                    <div className="md:col-span-6">
+                      <div className="relative overflow-hidden rounded-xl border border-[#e2e2e2] bg-[#efefef] aspect-[16/10] w-full">
+                        <img
+                          src={coverImage}
+                          alt="Selected event cover preview"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover block"
+                        />
+                        {customPhoto ? (
+                          <button
+                            type="button"
+                            onClick={handleRemoveCustomPhoto}
+                            aria-label="Remove uploaded cover photo"
+                            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 glass-light text-[#000000]"
+                          >
+                            <X size={14} aria-hidden="true" />
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="mt-2.5 text-xs text-[#5e5e5e] font-mono-tabular">
+                        {customPhoto
+                          ? `Uploaded: ${customPhoto.fileName} · ${customPhoto.width}x${customPhoto.height} · ${customPhoto.sizeKb} KB`
+                          : 'Live 16:10 event card preview'}
+                      </p>
+                    </div>
+
+                    <div className="md:col-span-6 flex flex-col">
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDraggingPhoto(true);
+                        }}
+                        onDragLeave={() => setIsDraggingPhoto(false)}
+                        onDrop={handlePhotoDrop}
+                        className={`flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed p-6 text-center ${
+                          isDraggingPhoto
                             ? 'border-[#000000] bg-[#efefef]'
-                            : 'border-[#e2e2e2] bg-[#ffffff]'
+                            : 'border-[#afafaf] bg-white/75'
                         }`}
                       >
-                        <img
-                          src={item.url}
-                          alt={item.label}
-                          referrerPolicy="no-referrer"
-                          className="aspect-[16/10] w-full object-cover block rounded-lg"
+                        <input
+                          ref={fileInputRef}
+                          id="host-cover-upload"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handlePhotoInputChange}
+                          className="sr-only"
                         />
-                        <span className="mt-2 block text-xs font-medium text-[#000000]">
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                        <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#efefef] text-[#000000]">
+                          <Upload size={18} aria-hidden="true" />
+                        </div>
+                        <p className="mt-3 text-sm font-semibold text-[#000000]">
+                          {uploadingPhoto
+                            ? 'Optimizing your photo...'
+                            : customPhoto
+                              ? 'Upload a different photo'
+                              : 'Upload your event photo'}
+                        </p>
+                        <p className="mt-1 text-xs text-[#5e5e5e] max-w-xs leading-relaxed">
+                          Drag and drop a JPG, PNG, or WebP banner here, or browse from your device. Auto-cropped cleanly to 16:10 (up to 10 MB).
+                        </p>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                          <button
+                            type="button"
+                            disabled={uploadingPhoto}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="inline-flex items-center justify-center rounded-full bg-[#000000] active:bg-[#282828] disabled:opacity-50 px-5 py-2.5 text-xs font-medium text-[#ffffff] whitespace-nowrap"
+                          >
+                            {customPhoto ? 'Replace Photo' : 'Choose Photo'}
+                          </button>
+                          {customPhoto ? (
+                            <button
+                              type="button"
+                              onClick={handleRemoveCustomPhoto}
+                              className="inline-flex items-center justify-center rounded-full border border-[#e2e2e2] bg-[#ffffff] px-4 py-2.5 text-xs font-medium text-[#000000] whitespace-nowrap"
+                            >
+                              Use Preset
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
 
-              <div className="border border-[#e2e2e2] bg-[#ffffff] p-7 md:p-10 space-y-6 rounded-2xl">
+                      {photoError ? (
+                        <p role="alert" className="mt-2.5 text-xs font-medium text-[#b42318]">
+                          {photoError}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#e2e2e2]">
+                    <p className="text-xs font-medium text-[#5e5e5e] mb-3">
+                      Or pick a preset campus photo
+                    </p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                      {AVAILABLE_COVERS.map((item) => {
+                        const selected = !customPhoto && coverImage === item.url;
+                        return (
+                          <button
+                            key={item.url}
+                            type="button"
+                            onClick={() => {
+                              setCustomPhoto(null);
+                              setPhotoError('');
+                              setCoverImage(item.url);
+                            }}
+                            className={`text-left border p-2 rounded-xl ${
+                              selected
+                                ? 'border-[#000000] bg-[#efefef]'
+                                : 'border-[#e2e2e2] bg-white/80'
+                            }`}
+                          >
+                            <img
+                              src={item.url}
+                              alt={item.label}
+                              referrerPolicy="no-referrer"
+                              className="aspect-[16/10] w-full object-cover block rounded-lg"
+                            />
+                            <span className="mt-2 block text-xs font-medium text-[#000000]">
+                              {item.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-[#e2e2e2] glass-light p-7 md:p-10 space-y-6 rounded-2xl">
                 <div className="flex items-baseline justify-between gap-4 pb-4 border-b border-[#e2e2e2]">
                   <h2 className="text-lg font-bold text-[#000000]">3. Ticket tiers</h2>
                   <button
@@ -460,7 +611,7 @@ export function HostEventPage() {
                 </div>
               </div>
 
-              <div className="border border-[#e2e2e2] bg-[#ffffff] p-7 md:p-10 space-y-6 rounded-2xl">
+                <div className="border border-[#e2e2e2] glass-light p-7 md:p-10 space-y-6 rounded-2xl">
                 <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
                   4. Organizer contact
                 </h2>
@@ -530,18 +681,19 @@ export function HostEventPage() {
                     </Link>
                     .
                   </p>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="bg-[#000000] active:bg-[#282828] disabled:opacity-50 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full whitespace-nowrap"
-                  >
-                    {submitting ? 'Publishing...' : 'Publish Event'}
-                  </button>
+                    <button
+                      type="submit"
+                      disabled={submitting || uploadingPhoto}
+                      className="bg-[#000000] active:bg-[#282828] disabled:opacity-50 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full whitespace-nowrap"
+                    >
+                      {submitting ? 'Publishing...' : 'Publish Event'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </>
-        )}
+              </form>
+            </>
+          )}
+        </div>
       </section>
     </PageTransition>
   );

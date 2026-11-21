@@ -158,7 +158,16 @@ export async function persistHostedEvent(
     isoDate: event.isoDate.slice(0, 20),
     timeLabel: event.timeLabel.slice(0, 60),
     timezone: event.timezone.slice(0, 20),
-    coverImage: event.coverImage.slice(0, 300),
+    coverImage:
+      event.coverImage &&
+      event.coverImage.length <= 260_000 &&
+      (event.coverImage.startsWith('/src/assets/') ||
+        event.coverImage.startsWith('https://') ||
+        event.coverImage.startsWith('data:image/jpeg;base64,') ||
+        event.coverImage.startsWith('data:image/png;base64,') ||
+        event.coverImage.startsWith('data:image/webp;base64,'))
+        ? event.coverImage
+        : '/src/assets/images/real_hackathon_main.jpg',
     coverCaption: event.coverCaption.slice(0, 220),
     description: event.description.slice(0, 12),
     host: {
