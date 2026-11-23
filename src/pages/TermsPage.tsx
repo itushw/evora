@@ -34,7 +34,7 @@ const TERMS_SECTIONS: LegalSection[] = [
     number: '03',
     title: 'Organizer Publishing Standards & Permissions',
     paragraphs: [
-      'Organizers publishing on Evora warrant that all venue permissions, institutional approvals, municipal sound or assembly clearances, and media licenses are secured prior to opening registrations. Event descriptions, schedules, ticket prices, and seat counts must remain accurate and truthful.',
+      'Organizers publishing on Evora warrant that all venue permissions, institutional approvals, municipal sound or assembly clearances, and media licenses are secured prior to opening registrations. All submitted listings are subject to review and approval by Evora administrators before becoming publicly visible. Event descriptions, schedules, ticket prices, and seat counts must remain accurate and truthful.',
       'Organizers must disclose material conditions of admission before checkout, including college ID requirements, minimum age thresholds, team-size constraints for hackathons, gate closing hours, and non-refundable merchandise components.',
       'Organizers may not list misleading capacity figures, collect undisclosed mandatory cash fees at the gate beyond stated ticket prices, or use Evora listings to redirect attendees to unverified external payment links.',
     ],
@@ -42,9 +42,9 @@ const TERMS_SECTIONS: LegalSection[] = [
   {
     id: 'ticket-purchases',
     number: '04',
-    title: 'Bookings, Pricing & Itemized Fees',
+    title: 'Bookings & Ticket Pricing',
     paragraphs: [
-      'All ticket prices are set directly by the Organizer and displayed in Indian Rupees (INR). Before you finalize any order at checkout, Evora presents the full itemized payable amount consisting of the Ticket Subtotal plus any applicable 2.5% booking fee. Complimentary RSVPs and free student passes incur zero platform charges.',
+      'All ticket prices are set directly by the Organizer and displayed in Indian Rupees (INR). Before you finalize any order at checkout, Evora presents the exact payable ticket subtotal with zero platform booking commission. Both complimentary RSVPs and paid event passes incur ₹0 platform commission.',
       'Starting checkout holds your selected passes for fifteen (15) minutes. If checkout is not completed within that window, the temporary reservation expires automatically and seats return to public availability.',
       'A booking becomes confirmed only after Evora records order confirmation and issues an official Order ID (prefixed EVR-) together with unique scannable QR entry passes.',
     ],
@@ -54,9 +54,9 @@ const TERMS_SECTIONS: LegalSection[] = [
     number: '05',
     title: 'Order Settlement, Verification & Organizer Payouts',
     paragraphs: [
-      'Paid ticket bookings are settled exclusively through the designated checkout screen for the exact order amount shown on your order summary. Attendees are responsible for verifying the order amount before confirming payment and keeping their transaction reference number if requested during reconciliation.',
-      'Orders marked confirmed without verified settlement matching the issued order reference may be placed under review or cancelled prior to event entry. Evora reserves the right to reconcile settlement logs with Organizers before gate check-in.',
-      'Collected ticket proceeds (net of applicable 2.5% booking fees, approved refunds, and dispute holds) are disbursed to verified Organizers on a standard schedule of two (2) business days after scheduled event completion to protect attendees against sudden cancellations.',
+      'Paid ticket bookings are settled through the designated checkout screen for the exact order amount shown on your order summary. Where an Organizer supplies their own verified UPI VPA on the listing, checkout QR codes route payment directly to that Organizer UPI account. Attendees are responsible for verifying the order amount before confirming payment and keeping their transaction reference number if requested during reconciliation.',
+      'Orders marked confirmed without verified settlement matching the issued order reference may be placed under review or cancelled prior to event entry. Evora and Organizers reserve the right to reconcile settlement logs before gate check-in.',
+      'Organizers are solely responsible for maintaining an accurate UPI VPA, reconciling incoming attendee payments, and issuing any eligible attendee refunds directly in accordance with their published refund policy.',
     ],
   },
   {
@@ -65,7 +65,7 @@ const TERMS_SECTIONS: LegalSection[] = [
     title: 'Cancellations, Refunds & Event Postponements',
     paragraphs: [
       'Each event page states the Organizer refund policy clearly prior to checkout. Where an Attendee cancels an eligible booking within the published cancellation window using the Order Receipt page, the corresponding QR passes are voided immediately and capacity returns to the event.',
-      'If an Organizer cancels an event entirely or reschedules the event by more than twenty-four (24) hours without providing a mutually acceptable alternative date, affected paid attendees are entitled to a full refund of ticket face value and booking fees, processed within five (5) to ten (10) business days.',
+      'If an Organizer cancels an event entirely or reschedules the event by more than twenty-four (24) hours without providing a mutually acceptable alternative date, affected paid attendees are entitled to a full refund of ticket face value from the Organizer within five (5) to ten (10) business days.',
       'Once a pass has been scanned at venue entry or once the published cancellation cutoff has passed, bookings are final except where mandatory consumer protection law provides otherwise.',
     ],
   },

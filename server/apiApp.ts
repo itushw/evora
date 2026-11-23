@@ -118,21 +118,21 @@ function verifyIntentToken(token: string): StoredPaymentIntent | null {
   }
 }
 
+const UPI_VPA_REGEX = /^[a-zA-Z0-9._-]{2,64}@[a-zA-Z0-9]{2,32}$/;
+
+function sanitizeVpa(raw?: string): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const cleaned = raw.trim();
+  if (!cleaned) return undefined;
+  return UPI_VPA_REGEX.test(cleaned) ? cleaned : undefined;
+}
+
 function computeTotalsPaise(unitPricePaise: number, quantity: number) {
   const subtotalPaise = unitPricePaise * quantity;
-  if (subtotalPaise === 0) {
-    return {
-      subtotalPaise: 0,
-      platformFeePaise: 0,
-      totalPaise: 0,
-    };
-  }
-  const platformFeePaise = Math.round(subtotalPaise * 0.025);
-  const totalPaise = subtotalPaise + platformFeePaise;
   return {
     subtotalPaise,
-    platformFeePaise,
-    totalPaise,
+    platformFeePaise: 0,
+    totalPaise: subtotalPaise,
   };
 }
 
@@ -140,12 +140,19 @@ function buildDynamicPaymentQrPayload(
   totalPaise: number,
   intentId: string,
   eventTitle: string,
+  hostPayoutVpa?: string,
+  hostOrganization?: string,
 ): string {
   const amountRupees = (totalPaise / 100).toFixed(2);
   const shortNote = `Evora ${eventTitle}`.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 42).trim();
+  const payeeVpa = sanitizeVpa(hostPayoutVpa) || MERCHANT_SETTLEMENT_VPA;
+  const payeeName =
+    sanitizeVpa(hostPayoutVpa) && hostOrganization?.trim()
+      ? hostOrganization.trim().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 40).trim() || 'Event Organizer'
+      : 'Evora by Browns Squad';
   const params = new URLSearchParams({
-    pa: MERCHANT_SETTLEMENT_VPA,
-    pn: 'Evora by Browns Squad',
+    pa: payeeVpa,
+    pn: payeeName,
     am: amountRupees,
     cu: 'INR',
     tr: intentId,
@@ -300,7 +307,9 @@ export function createApiApp(): Express {
     const city = typeof req.query.city === 'string' ? req.query.city.trim() : '';
     const sort = typeof req.query.sort === 'string' ? req.query.sort.trim() : 'date';
 
-    let results = [...eventsStore];
+    let results = eventsStore.filter(
+      (evt) => evt.approvalStatus !== 'pending' && evt.approvalStatus !== 'rejected',
+    );
 
     if (query) {
       results = results.filter(
@@ -357,6 +366,13 @@ export function createApiApp(): Express {
     }
     if (!Array.isArray(body.tiers) || body.tiers.length === 0) {
       res.status(400).json({ error: 'Add at least one ticket tier.' });
+      return;
+    }
+
+    const rawVpa = typeof body.payoutVpa === 'string' ? body.payoutVpa.trim() : '';
+    const validatedVpa = rawVpa ? sanitizeVpa(rawVpa) : undefined;
+    if (rawVpa && !validatedVpa) {
+      res.status(400).json({ error: 'Enter a valid UPI ID (for example, clubname@okaxis).' });
       return;
     }
 
@@ -437,6 +453,8 @@ export function createApiApp(): Express {
       refundPolicySummary:
         body.refundPolicySummary?.trim() ||
         'Refunds available up to 48 hours before doors open.',
+      ...(validatedVpa ? { payoutVpa: validatedVpa } : {}),
+      approvalStatus: 'pending',
     };
 
     if (newEvent.description.length === 0) {
@@ -466,7 +484,11 @@ export function createApiApp(): Express {
       buyerEmail?: string;
       buyerPhone?: string;
       userId?: string;
-      eventSnapshot?: EventSnapshot & { pricePaise: number };
+      eventSnapshot?: EventSnapshot & {
+        pricePaise: number;
+        payoutVpa?: string;
+        hostOrganization?: string;
+      };
     };
 
     const existingEvent = eventsStore.find((e) => e.slug === eventSlug);
@@ -481,6 +503,8 @@ export function createApiApp(): Express {
       existingTier !== undefined ? existingTier.pricePaise : eventSnapshot?.pricePaise;
     const resolvedRemaining =
       existingTier !== undefined ? existingTier.remaining : eventSnapshot?.remaining;
+    const resolvedPayoutVpa = existingEvent?.payoutVpa || eventSnapshot?.payoutVpa;
+    const resolvedHostOrg = existingEvent?.host?.organization || eventSnapshot?.hostOrganization;
 
     if (!resolvedEventId || !resolvedSlug || !resolvedTitle) {
       res.status(404).json({ error: 'Selected event could not be found.', code: 'EVENT_NOT_FOUND' });
@@ -522,7 +546,13 @@ export function createApiApp(): Express {
 
     const paymentQrPayload =
       totals.totalPaise > 0
-        ? buildDynamicPaymentQrPayload(totals.totalPaise, intentId, resolvedTitle)
+        ? buildDynamicPaymentQrPayload(
+            totals.totalPaise,
+            intentId,
+            resolvedTitle,
+            resolvedPayoutVpa,
+            resolvedHostOrg,
+          )
         : null;
 
     const snapshot: EventSnapshot | undefined = existingEvent && existingTier

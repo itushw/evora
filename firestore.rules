@@ -11,6 +11,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        || (
+          request.auth.token.email == 'brownsquad67@gmail.com'
+          && request.auth.token.email_verified == true
+        )
+      );
+    }
+
     function isValidId(id) {
       return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
@@ -91,7 +101,8 @@ service cloud.firestore {
           'timeLabel', 'timezone', 'coverImage', 'coverCaption',
           'description', 'host', 'schedule', 'tiers',
           'refundPolicySummary', 'creatorUid', 'createdAt', 'updatedAt',
-          'placeId', 'latitude', 'longitude', 'featured'
+          'placeId', 'latitude', 'longitude', 'featured',
+          'payoutVpa', 'approvalStatus', 'reviewNote', 'reviewedAt', 'reviewedBy'
         ])
         && data.id == eventId
         && isNonEmptyString(data.slug, 2, 120)
@@ -118,7 +129,12 @@ service cloud.firestore {
         && isValidOptionalString(data, 'placeId', 200)
         && isValidOptionalNumber(data, 'latitude', -90, 90)
         && isValidOptionalNumber(data, 'longitude', -180, 180)
-        && (!('featured' in data) || data.featured is bool);
+        && (!('featured' in data) || data.featured is bool)
+        && isValidOptionalString(data, 'payoutVpa', 100)
+        && (!('approvalStatus' in data) || data.approvalStatus in ['pending', 'approved', 'rejected'])
+        && isValidOptionalString(data, 'reviewNote', 300)
+        && isValidOptionalString(data, 'reviewedAt', 40)
+        && isValidOptionalString(data, 'reviewedBy', 160);
     }
 
     function isValidOrderCreate(data, orderId) {
@@ -176,12 +192,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /admins/{adminId} {
+      allow get: if isOwner(adminId);
+      allow list, write: if false;
+    }
+
     match /events/{eventId} {
       allow get, list: if true;
       allow create: if isSignedIn()
         && isValidId(eventId)
         && request.resource.data.creatorUid == request.auth.uid
-        && isValidEventDoc(request.resource.data, eventId);
+        && isValidEventDoc(request.resource.data, eventId)
+        && (isAdmin() || request.resource.data.approvalStatus == 'pending');
       allow update: if isSignedIn()
         && isValidEventDoc(request.resource.data, eventId)
         && request.resource.data.id == resource.data.id
@@ -189,13 +211,18 @@ service cloud.firestore {
         && request.resource.data.creatorUid == resource.data.creatorUid
         && request.resource.data.createdAt == resource.data.createdAt
         && (
-          resource.data.creatorUid == request.auth.uid
+          isAdmin()
+          || (
+            resource.data.creatorUid == request.auth.uid
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['approvalStatus', 'reviewNote', 'reviewedAt', 'reviewedBy'])
+          )
           || (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tiers', 'updatedAt'])
             && request.resource.data.tiers.size() == resource.data.tiers.size()
           )
         );
-      allow delete: if isSignedIn() && resource.data.creatorUid == request.auth.uid;
+      allow delete: if isSignedIn()
+        && (resource.data.creatorUid == request.auth.uid || isAdmin());
     }
 
     match /orders/{orderId} {

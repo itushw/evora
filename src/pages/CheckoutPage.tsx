@@ -101,10 +101,34 @@ export function CheckoutPage() {
     );
   }
 
+  if (event.approvalStatus === 'pending' || event.approvalStatus === 'rejected') {
+    return (
+      <PageTransition>
+        <div className="mx-auto max-w-[760px] px-6 md:px-8 py-24">
+          <div className="border border-[#e2e2e2] bg-[#ffffff] p-10 rounded-2xl">
+            <p className="font-mono-tabular text-xs text-[#5e5e5e]">PENDING APPROVAL</p>
+            <h1 className="mt-3 display-xl text-[#000000]">
+              Bookings are not open yet
+            </h1>
+            <p className="mt-4 text-sm text-[#5e5e5e]">
+              This event is awaiting admin approval before passes can be booked.
+            </p>
+            <Link
+              to="/events"
+              className="mt-6 inline-block bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3 rounded-full"
+            >
+              Browse Events
+            </Link>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const selectedTier = event.tiers.find((t) => t.id === tierId) || event.tiers[0];
   const estimatedSubtotal = selectedTier ? selectedTier.pricePaise * quantity : 0;
-  const estimatedPlatform = estimatedSubtotal > 0 ? Math.round(estimatedSubtotal * 0.025) : 0;
-  const estimatedTotal = estimatedSubtotal + estimatedPlatform;
+  const estimatedPlatform = 0;
+  const estimatedTotal = estimatedSubtotal;
 
   const displaySubtotal = intent ? intent.subtotalPaise : estimatedSubtotal;
   const displayPlatform = intent ? intent.platformFeePaise : estimatedPlatform;
@@ -144,6 +168,8 @@ export function CheckoutPage() {
           pricePaise: selectedTier.pricePaise,
           capacity: selectedTier.capacity,
           remaining: selectedTier.remaining,
+          payoutVpa: event.payoutVpa,
+          hostOrganization: event.host.organization,
         },
       });
       setIntent(created);
@@ -402,6 +428,12 @@ export function CheckoutPage() {
                               <p className="text-xs text-[#5e5e5e] leading-relaxed max-w-xs">
                                 Open GPay, PhonePe, Paytm, BHIM, or your bank app and scan this code. Once payment completes on your phone, press Order Done below.
                               </p>
+                              {event.payoutVpa ? (
+                                <p className="text-xs text-[#000000]">
+                                  Payee: <span className="font-medium">{event.host.organization}</span>{' '}
+                                  <span className="font-mono-tabular text-[#5e5e5e]">({event.payoutVpa})</span>
+                                </p>
+                              ) : null}
                             </div>
                           </div>
 
@@ -463,7 +495,7 @@ export function CheckoutPage() {
                 </div>
                 {displayPlatform > 0 ? (
                   <div className="flex justify-between gap-4">
-                    <dt className="text-[#5e5e5e]">Booking fee (2.5%)</dt>
+                    <dt className="text-[#5e5e5e]">Booking fee</dt>
                     <dd className="font-mono-tabular text-[#000000]">
                       {formatInr(displayPlatform)}
                     </dd>

@@ -9,6 +9,8 @@ import {
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -18,7 +20,7 @@ import {
 import { auth, googleProvider } from '../lib/firebase.ts';
 import { upsertUserProfile } from '../lib/firestoreStore.ts';
 
-export type AuthModalMode = 'signin' | 'signup';
+export type AuthModalMode = 'signin' | 'signup' | 'reset';
 
 interface AuthContextValue {
   user: User | null;
@@ -30,6 +32,8 @@ interface AuthContextValue {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (fullName: string, email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
   signOutUser: () => Promise<void>;
 }
 
@@ -52,6 +56,8 @@ export function formatFirebaseAuthError(error: unknown): string {
       return 'Choose a stronger password with at least 6 characters.';
     case 'auth/invalid-email':
       return 'Enter a valid email address.';
+    case 'auth/missing-email':
+      return 'Enter your email address first.';
     case 'auth/popup-closed-by-user':
       return 'Google sign-in window was closed before completing sign-in.';
     case 'auth/popup-blocked':
@@ -110,6 +116,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOpen(false);
   };
 
+  const sendPasswordReset = async (email: string) => {
+    const cleaned = email.trim();
+    if (!cleaned) {
+      throw new Error('Enter your email address to receive a password reset link.');
+    }
+    const actionUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+    await sendPasswordResetEmail(
+      auth,
+      cleaned,
+      actionUrl ? { url: actionUrl } : undefined,
+    );
+  };
+
+  const sendVerificationEmail = async () => {
+    if (!auth.currentUser) {
+      throw new Error('Sign in first to verify your email address.');
+    }
+    await sendEmailVerification(auth.currentUser);
+  };
+
   const signOutUser = async () => {
     await signOut(auth);
   };
@@ -125,6 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogle,
+      sendPasswordReset,
+      sendVerificationEmail,
       signOutUser,
     }),
     [user, authReady, authModalOpen, authModalMode],

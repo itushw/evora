@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, ArrowRight, Pause, Play } from 'lucide-react';
+import { Search, MapPin, ArrowRight } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { EventImage } from '../components/EventImage.tsx';
 import { listMergedEvents } from '../lib/firestoreStore.ts';
@@ -20,13 +20,11 @@ function totalRemaining(event: EvoraEvent): number {
 
 export function HomePage() {
   const navigate = useNavigate();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [events, setEvents] = useState<EvoraEvent[]>(SEED_EVENTS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [videoPaused, setVideoPaused] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -43,28 +41,6 @@ export function HomePage() {
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced && videoRef.current) {
-      videoRef.current.pause();
-      setVideoPaused(true);
-    }
-  }, []);
-
-  const toggleHeroVideo = () => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (el.paused) {
-      void el.play().catch(() => {});
-      setVideoPaused(false);
-    } else {
-      el.pause();
-      setVideoPaused(true);
-    }
-  };
 
   const cities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -110,7 +86,6 @@ export function HomePage() {
       {/* Hero section ONLY: looping real college-events video extends behind the frosted top nav */}
       <section className="relative -mt-16 pt-16 w-full overflow-hidden border-b border-white/15 bg-[#000000]">
         <video
-          ref={videoRef}
           src="/src/assets/videos/college_events_hero.mp4"
           poster="/src/assets/images/real_fest_crowd.jpg"
           autoPlay
@@ -196,27 +171,6 @@ export function HomePage() {
                 </button>
               </form>
             </div>
-          </div>
-
-          <div className="mt-10 flex justify-end">
-            <button
-              type="button"
-              onClick={toggleHeroVideo}
-              aria-label={videoPaused ? 'Play background video' : 'Pause background video'}
-              className="glass-dark inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-xs font-medium text-[#ffffff]"
-            >
-              {videoPaused ? (
-                <>
-                  <Play size={13} aria-hidden="true" />
-                  <span>Play video</span>
-                </>
-              ) : (
-                <>
-                  <Pause size={13} aria-hidden="true" />
-                  <span>Pause video</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       </section>
@@ -412,12 +366,6 @@ export function HomePage() {
                     className="inline-flex items-center justify-center bg-[#ffffff] active:bg-[#e2e2e2] text-[#000000] text-sm font-medium px-6 py-3.5 rounded-full"
                   >
                     Host an Event
-                  </Link>
-                  <Link
-                    to="/pricing"
-                    className="inline-flex items-center justify-center border border-white/30 bg-white/10 active:bg-white/20 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full"
-                  >
-                    View Pricing
                   </Link>
                 </div>
               </div>

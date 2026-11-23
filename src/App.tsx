@@ -17,6 +17,7 @@ import { HostEventPage } from './pages/HostEventPage.tsx';
 import { PricingPage } from './pages/PricingPage.tsx';
 import { TermsPage } from './pages/TermsPage.tsx';
 import { PrivacyPage } from './pages/PrivacyPage.tsx';
+import { AdminPage } from './pages/AdminPage.tsx';
 import { ErrorPage } from './pages/ErrorPage.tsx';
 
 function ScrollToTopOnRouteChange() {
@@ -94,6 +95,7 @@ function AnimatedRoutes() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/404" element={<ErrorPage code="404" />} />
         <Route path="/error/402" element={<ErrorPage code="402" />} />
         <Route path="/error/403" element={<ErrorPage code="403" />} />

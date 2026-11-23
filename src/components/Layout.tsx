@@ -10,7 +10,6 @@ interface LayoutProps {
 const NAV_LINKS = [
   { label: 'Events', to: '/events' },
   { label: 'Passes', to: '/passes' },
-  { label: 'Pricing', to: '/pricing' },
   { label: 'Host Event', to: '/host' },
 ];
 
@@ -229,7 +228,6 @@ export function Layout({ children }: LayoutProps) {
               </h2>
               <ul className="space-y-3 text-sm text-[#afafaf]">
                 <li><Link to="/host">Host an Event</Link></li>
-                <li><Link to="/pricing">Pricing</Link></li>
                 <li><Link to="/passes">My Passes</Link></li>
               </ul>
             </div>

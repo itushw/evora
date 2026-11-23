@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Upload, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, Upload, X } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { AuthCard } from '../components/AuthCard.tsx';
 import {
@@ -12,7 +12,9 @@ import { AVAILABLE_COVERS } from '../data/seedEvents.ts';
 import { createEvent } from '../lib/api.ts';
 import { persistHostedEvent } from '../lib/firestoreStore.ts';
 import { processCoverPhotoFile, type ProcessedCoverPhoto } from '../lib/imageUpload.ts';
-import { EVENT_CATEGORIES, type EventCategory } from '../types/ticketing.ts';
+import { EVENT_CATEGORIES, type EventCategory, type EvoraEvent } from '../types/ticketing.ts';
+
+const UPI_VPA_REGEX = /^[a-zA-Z0-9._-]{2,64}@[a-zA-Z0-9]{2,32}$/;
 
 interface DraftTier {
   name: string;
@@ -22,7 +24,6 @@ interface DraftTier {
 }
 
 export function HostEventPage() {
-  const navigate = useNavigate();
   const { user, authReady } = useAuth();
 
   const [title, setTitle] = useState('');
@@ -49,6 +50,7 @@ export function HostEventPage() {
   const [hostName, setHostName] = useState('');
   const [hostOrganization, setHostOrganization] = useState('');
   const [hostEmail, setHostEmail] = useState('');
+  const [payoutVpa, setPayoutVpa] = useState('');
   const [refundPolicySummary, setRefundPolicySummary] = useState(
     'Full refund available up to 48 hours before doors open.',
   );
@@ -64,6 +66,7 @@ export function HostEventPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [errorBanner, setErrorBanner] = useState('');
+  const [submittedEvent, setSubmittedEvent] = useState<EvoraEvent | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -139,10 +142,36 @@ export function HostEventPage() {
     }
   };
 
+  const handleResetForm = () => {
+    setSubmittedEvent(null);
+    setTitle('');
+    setSubtitle('');
+    setCity('');
+    setVenueName('');
+    setVenueAddress('');
+    setPlaceId(undefined);
+    setLatitude(undefined);
+    setLongitude(undefined);
+    setVerifiedVenueLabel('');
+    setDescription('');
+    setPayoutVpa('');
+    setCustomPhoto(null);
+    setCoverImage(AVAILABLE_COVERS[0].url);
+    setErrorBanner('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user) return;
     setErrorBanner('');
+
+    const trimmedVpa = payoutVpa.trim();
+    if (trimmedVpa && !UPI_VPA_REGEX.test(trimmedVpa)) {
+      setErrorBanner('Enter a valid UPI ID (for example: yourclub@okaxis) or leave the UPI field blank.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -165,6 +194,7 @@ export function HostEventPage() {
         hostName,
         hostOrganization,
         hostEmail,
+        payoutVpa: trimmedVpa || undefined,
         refundPolicySummary,
         tiers: tiers.map((t) => ({
           name: t.name,
@@ -174,10 +204,11 @@ export function HostEventPage() {
         })),
       });
 
-      await persistHostedEvent(created, user.uid);
-      navigate(`/events/${created.slug}`);
+      const saved = await persistHostedEvent(created, user.uid);
+      setSubmittedEvent(saved);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
-      setErrorBanner(err instanceof Error ? err.message : 'Unable to publish event.');
+      setErrorBanner(err instanceof Error ? err.message : 'Unable to submit event.');
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +220,7 @@ export function HostEventPage() {
         <div className="mx-auto max-w-[1040px] px-6 md:px-8 py-14 md:py-18">
           <h1 className="display-xxl text-[#000000]">Host an event</h1>
           <p className="mt-3 text-base text-[#5e5e5e] max-w-2xl leading-relaxed">
-            Set up your college fest, tech hackathon, arts showcase, workshop, or live show. Once published, attendees can book passes immediately.
+            Set up your college fest, tech hackathon, arts showcase, workshop, or live show. Submitted listings are reviewed by our team before going live.
           </p>
         </div>
       </section>
@@ -202,8 +233,66 @@ export function HostEventPage() {
             <div className="mx-auto max-w-md">
               <AuthCard
                 heading="Sign in to host an event"
-                subheading="Create an Evora account or sign in to publish listings and manage your campus event."
+                subheading="Create an Evora account or sign in to submit listings and manage your campus event."
               />
+            </div>
+          ) : submittedEvent ? (
+            <div className="mx-auto max-w-2xl border border-[#e2e2e2] glass-light p-8 md:p-12 rounded-2xl space-y-6">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#efefef] text-[#166534]">
+                <CheckCircle2 size={24} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-mono-tabular text-xs font-semibold uppercase tracking-wide text-[#5e5e5e]">
+                  Pending Admin Review
+                </p>
+                <h2 className="mt-2 display-xl text-[#000000]">
+                  Your event has been submitted
+                </h2>
+                <p className="mt-3 text-sm text-[#5e5e5e] leading-relaxed">
+                  {submittedEvent.title} is now queued for review. Once approved by an Evora administrator, it will appear in the public directory and open for attendee bookings.
+                </p>
+              </div>
+
+              <dl className="border-t border-b border-[#e2e2e2] py-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-xs text-[#5e5e5e]">Event</dt>
+                  <dd className="mt-1 font-medium text-[#000000]">{submittedEvent.title}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-[#5e5e5e]">Date & City</dt>
+                  <dd className="mt-1 font-mono-tabular text-[#000000]">
+                    {submittedEvent.dateLabel} · {submittedEvent.city}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-[#5e5e5e]">Organizer</dt>
+                  <dd className="mt-1 text-[#000000]">{submittedEvent.host.organization}</dd>
+                </div>
+                {submittedEvent.payoutVpa ? (
+                  <div>
+                    <dt className="text-xs text-[#5e5e5e]">Payout UPI ID</dt>
+                    <dd className="mt-1 font-mono-tabular text-[#000000]">
+                      {submittedEvent.payoutVpa}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to={`/events/${submittedEvent.slug}`}
+                  className="inline-flex items-center justify-center bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3 rounded-full"
+                >
+                  Preview Draft
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleResetForm}
+                  className="inline-flex items-center justify-center bg-[#ffffff] border border-[#e2e2e2] text-[#000000] text-sm font-medium px-5 py-3 rounded-full"
+                >
+                  Submit Another Event
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -613,7 +702,7 @@ export function HostEventPage() {
 
                 <div className="border border-[#e2e2e2] glass-light p-7 md:p-10 space-y-6 rounded-2xl">
                 <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
-                  4. Organizer contact
+                  4. Organizer contact & payouts
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -659,23 +748,42 @@ export function HostEventPage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="org-refund" className="block text-xs font-medium text-[#000000] mb-1.5">
-                    Refund policy
-                  </label>
-                  <input
-                    id="org-refund"
-                    type="text"
-                    required
-                    value={refundPolicySummary}
-                    onChange={(e) => setRefundPolicySummary(e.target.value)}
-                    className="w-full bg-[#efefef] px-3.5 py-3 text-sm text-[#000000] rounded-lg"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="org-vpa" className="block text-xs font-medium text-[#000000] mb-1.5">
+                      Organizer UPI ID / VPA (optional)
+                    </label>
+                    <input
+                      id="org-vpa"
+                      type="text"
+                      value={payoutVpa}
+                      onChange={(e) => setPayoutVpa(e.target.value)}
+                      placeholder="yourclub@okaxis"
+                      className="w-full bg-[#efefef] px-3.5 py-3 text-sm font-mono-tabular text-[#000000] placeholder:text-[#5e5e5e] rounded-lg"
+                    />
+                    <p className="mt-1.5 text-xs text-[#5e5e5e]">
+                      For paid passes, attendee UPI QR payments route straight to this UPI ID.
+                    </p>
+                  </div>
+                  <div>
+                    <label htmlFor="org-refund" className="block text-xs font-medium text-[#000000] mb-1.5">
+                      Refund policy
+                    </label>
+                    <input
+                      id="org-refund"
+                      type="text"
+                      required
+                      value={refundPolicySummary}
+                      onChange={(e) => setRefundPolicySummary(e.target.value)}
+                      className="w-full bg-[#efefef] px-3.5 py-3 text-sm text-[#000000] rounded-lg"
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-[#e2e2e2] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <p className="text-xs text-[#5e5e5e]">
-                    By publishing you agree to the Evora{' '}
+                    Submissions are reviewed before going public. By submitting you agree to the Evora{' '}
                     <Link to="/terms" className="text-[#000000] underline">
                       Terms of Service
                     </Link>
@@ -686,7 +794,7 @@ export function HostEventPage() {
                       disabled={submitting || uploadingPhoto}
                       className="bg-[#000000] active:bg-[#282828] disabled:opacity-50 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full whitespace-nowrap"
                     >
-                      {submitting ? 'Publishing...' : 'Publish Event'}
+                      {submitting ? 'Submitting...' : 'Submit for Approval'}
                     </button>
                   </div>
                 </div>

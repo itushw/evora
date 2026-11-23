@@ -6,18 +6,9 @@ import { formatInr } from '../lib/format.ts';
 export function PricingPage() {
   const [ticketPriceRupees, setTicketPriceRupees] = useState(299);
   const [ticketsSold, setTicketsSold] = useState(200);
-  const [feeBearer, setFeeBearer] = useState<'attendee' | 'organizer'>('attendee');
 
   const unitPaise = Math.max(0, Math.round(ticketPriceRupees * 100));
   const grossPaise = unitPaise * ticketsSold;
-  const feePerTicket = unitPaise > 0 ? Math.round(unitPaise * 0.025) : 0;
-
-  const attendeePaysPerTicket =
-    feeBearer === 'attendee' ? unitPaise + feePerTicket : unitPaise;
-  const organizerReceivesPerTicket =
-    feeBearer === 'attendee' ? unitPaise : Math.max(0, unitPaise - feePerTicket);
-  const netOrganizerPayout = organizerReceivesPerTicket * ticketsSold;
-  const totalFeePaise = feePerTicket * ticketsSold;
 
   return (
     <PageTransition>
@@ -25,7 +16,7 @@ export function PricingPage() {
         <div className="mx-auto max-w-[1120px] px-6 md:px-8 py-14 md:py-18">
           <h1 className="display-xxl text-[#000000]">Pricing</h1>
           <p className="mt-3 text-base text-[#5e5e5e] max-w-xl leading-relaxed">
-            Free events cost nothing. Paid tickets carry a flat 2.5% booking fee with zero monthly subscriptions or setup charges.
+            Hosting and booking on Evora is completely free, with zero platform commission and zero setup charges.
           </p>
         </div>
       </section>
@@ -38,8 +29,8 @@ export function PricingPage() {
                 <tr className="border-b border-[#e2e2e2] bg-white/50 text-xs font-medium uppercase tracking-wide text-[#5e5e5e]">
                   <th className="py-4 px-6">Event Type</th>
                   <th className="py-4 px-6">Booking Fee</th>
-                  <th className="py-4 px-6">Monthly Cost</th>
-                  <th className="py-4 px-6">Payout Window</th>
+                  <th className="py-4 px-6">Hosting Cost</th>
+                  <th className="py-4 px-6">Settlement</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e2e2]">
@@ -47,7 +38,7 @@ export function PricingPage() {
                   <td className="py-5 px-6 font-semibold text-[#000000]">
                     Free RSVPs & Campus Hackathons
                   </td>
-                  <td className="py-5 px-6 font-mono-tabular text-[#000000]">₹0 (Free)</td>
+                  <td className="py-5 px-6 font-mono-tabular text-[#000000]">₹0</td>
                   <td className="py-5 px-6 font-mono-tabular text-[#000000]">₹0</td>
                   <td className="py-5 px-6 text-[#5e5e5e]">Not applicable</td>
                 </tr>
@@ -55,9 +46,9 @@ export function PricingPage() {
                   <td className="py-5 px-6 font-semibold text-[#000000]">
                     Paid Fest & Workshop Passes
                   </td>
-                  <td className="py-5 px-6 font-mono-tabular text-[#000000]">2.5% per ticket</td>
+                  <td className="py-5 px-6 font-mono-tabular text-[#000000]">₹0 (0%)</td>
                   <td className="py-5 px-6 font-mono-tabular text-[#000000]">₹0</td>
-                  <td className="py-5 px-6 text-[#5e5e5e]">2 business days after event</td>
+                  <td className="py-5 px-6 text-[#5e5e5e]">Direct to organizer UPI VPA</td>
                 </tr>
               </tbody>
             </table>
@@ -66,7 +57,7 @@ export function PricingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             <div className="lg:col-span-6 border border-[#e2e2e2] glass-light p-8 space-y-6 rounded-2xl">
               <h2 className="text-lg font-bold text-[#000000] pb-4 border-b border-[#e2e2e2]">
-                Estimate your payout
+                Estimate your ticket revenue
               </h2>
 
               <div>
@@ -98,34 +89,6 @@ export function PricingPage() {
                   className="w-full bg-white/85 border border-black/10 px-3.5 py-3 text-sm font-mono-tabular text-[#000000] rounded-lg"
                 />
               </div>
-
-              <div>
-                <p className="text-xs font-medium text-[#000000] mb-2">Who covers the 2.5% fee?</p>
-                <div className="grid grid-cols-2 border border-[#e2e2e2] divide-x divide-[#e2e2e2] rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setFeeBearer('attendee')}
-                    className={`py-2.5 px-3 text-xs font-medium ${
-                      feeBearer === 'attendee'
-                        ? 'bg-[#000000] text-[#ffffff]'
-                        : 'bg-white/75 text-[#000000]'
-                    }`}
-                  >
-                    Attendee at checkout
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFeeBearer('organizer')}
-                    className={`py-2.5 px-3 text-xs font-medium ${
-                      feeBearer === 'organizer'
-                        ? 'bg-[#000000] text-[#ffffff]'
-                        : 'bg-white/75 text-[#000000]'
-                    }`}
-                  >
-                    Included in ticket price
-                  </button>
-                </div>
-              </div>
             </div>
 
             <div className="lg:col-span-6 border border-[#e2e2e2] glass-soft p-8 rounded-2xl">
@@ -136,7 +99,7 @@ export function PricingPage() {
                 <div className="flex justify-between gap-4">
                   <dt className="text-[#5e5e5e]">Attendee pays per pass</dt>
                   <dd className="font-mono-tabular font-semibold text-[#000000]">
-                    {formatInr(attendeePaysPerTicket)}
+                    {formatInr(unitPaise)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -144,12 +107,12 @@ export function PricingPage() {
                   <dd className="font-mono-tabular text-[#000000]">{formatInr(grossPaise)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[#5e5e5e]">Total booking fee (2.5%)</dt>
-                  <dd className="font-mono-tabular text-[#5e5e5e]">{formatInr(totalFeePaise)}</dd>
+                  <dt className="text-[#5e5e5e]">Platform commission</dt>
+                  <dd className="font-mono-tabular text-[#5e5e5e]">{formatInr(0)}</dd>
                 </div>
                 <div className="pt-4 border-t border-[#e2e2e2] flex justify-between gap-4 text-base font-bold text-[#000000]">
-                  <dt>You receive</dt>
-                  <dd className="font-mono-tabular">{formatInr(netOrganizerPayout)}</dd>
+                  <dt>Organizer receives</dt>
+                  <dd className="font-mono-tabular">{formatInr(grossPaise)}</dd>
                 </div>
               </dl>
               <div className="mt-8">

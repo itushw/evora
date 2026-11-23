@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -11,7 +12,22 @@ import {
 import type { User } from 'firebase/auth';
 import { db, handleFirestoreError, OperationType } from './firebase.ts';
 import { SEED_EVENTS } from '../data/seedEvents.ts';
-import type { EvoraEvent, TicketOrder } from '../types/ticketing.ts';
+import type { EventApprovalStatus, EvoraEvent, TicketOrder } from '../types/ticketing.ts';
+
+export const ADMIN_EMAIL = 'brownsquad67@gmail.com';
+
+export async function checkIsAdminUser(user: User | null): Promise<boolean> {
+  if (!user) return false;
+  if (user.email?.toLowerCase() === ADMIN_EMAIL && user.emailVerified) {
+    return true;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'admins', user.uid));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
 
 export async function upsertUserProfile(
   user: User,
@@ -73,9 +89,12 @@ export async function listMergedEvents(params?: {
     });
   });
   remoteEvents.forEach((evt) => {
-    if (evt && evt.slug) {
-      bySlug.set(evt.slug, evt);
+    if (!evt || !evt.slug) return;
+    if (evt.approvalStatus === 'pending' || evt.approvalStatus === 'rejected') {
+      bySlug.delete(evt.slug);
+      return;
     }
+    bySlug.set(evt.slug, evt);
   });
 
   let results = Array.from(bySlug.values());
@@ -179,11 +198,15 @@ export async function persistHostedEvent(
     schedule: event.schedule.slice(0, 20),
     tiers: event.tiers.slice(0, 10),
     refundPolicySummary: event.refundPolicySummary.slice(0, 300),
+    approvalStatus: 'pending' as EventApprovalStatus,
     creatorUid,
     createdAt: now,
     updatedAt: now,
   };
 
+  if (event.payoutVpa && event.payoutVpa.trim()) {
+    docPayload.payoutVpa = event.payoutVpa.trim().slice(0, 100);
+  }
   if (event.placeId) {
     docPayload.placeId = event.placeId.slice(0, 200);
   }
@@ -205,10 +228,54 @@ export async function persistHostedEvent(
 
   return {
     ...event,
+    payoutVpa: event.payoutVpa?.trim() || undefined,
+    approvalStatus: 'pending',
     creatorUid,
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export async function listAllHostedEventsForAdmin(): Promise<EvoraEvent[]> {
+  const path = 'events';
+  try {
+    const snap = await getDocs(collection(db, 'events'));
+    return snap.docs
+      .map((d) => d.data() as EvoraEvent)
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function updateEventApprovalStatus(
+  eventId: string,
+  status: EventApprovalStatus,
+  adminEmail: string,
+  reviewNote?: string,
+): Promise<void> {
+  const path = `events/${eventId}`;
+  const now = new Date().toISOString();
+  try {
+    await updateDoc(doc(db, 'events', eventId), {
+      approvalStatus: status,
+      reviewedAt: now,
+      reviewedBy: adminEmail.trim().slice(0, 160),
+      reviewNote: (reviewNote || '').trim().slice(0, 300),
+      updatedAt: now,
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteEventAsAdmin(eventId: string): Promise<void> {
+  const path = `events/${eventId}`;
+  try {
+    await deleteDoc(doc(db, 'events', eventId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
 }
 
 export async function persistConfirmedOrder(

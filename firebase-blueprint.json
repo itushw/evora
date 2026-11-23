@@ -56,6 +56,11 @@
         "schedule": { "type": "array" },
         "tiers": { "type": "array" },
         "refundPolicySummary": { "type": "string" },
+        "payoutVpa": { "type": "string", "maxLength": 100, "description": "Optional organizer UPI VPA for direct attendee payments." },
+        "approvalStatus": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Admin moderation status controlling public visibility." },
+        "reviewNote": { "type": "string", "maxLength": 300 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "reviewedBy": { "type": "string", "maxLength": 160 },
         "featured": { "type": "boolean" },
         "creatorUid": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -145,6 +150,17 @@
         "totalPaise",
         "passes"
       ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Allowlist marker document granting administrator moderation rights to a Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "grantedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "grantedAt"]
     }
   },
   "firestore": {
@@ -152,9 +168,13 @@
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Private user account profiles readable and writable only by the owning user."
     },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Admin role marker documents readable only by the matching user and never client-writable."
+    },
     "/events/{eventId}": {
       "schema": { "$ref": "#/entities/EvoraEvent" },
-      "description": "Publicly readable event listings created by authenticated organizers."
+      "description": "Event listings created by authenticated organizers and moderated by Evora admins."
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/TicketOrder" },

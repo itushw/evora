@@ -4,19 +4,32 @@ import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { EventImage } from '../components/EventImage.tsx';
 import { VenueLocationMap } from '../components/VenueLocationMap.tsx';
-import { getMergedEventBySlug } from '../lib/firestoreStore.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { checkIsAdminUser, getMergedEventBySlug } from '../lib/firestoreStore.ts';
 import { formatInr } from '../lib/format.ts';
 import type { EvoraEvent } from '../types/ticketing.ts';
 
 export function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user, authReady } = useAuth();
 
   const [event, setEvent] = useState<EvoraEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedTierId, setSelectedTierId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+
+  useEffect(() => {
+    let active = true;
+    checkIsAdminUser(user).then((result) => {
+      if (active) setIsAdmin(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!slug) {
@@ -53,7 +66,7 @@ export function EventDetailPage() {
     };
   }, [slug]);
 
-  if (loading) {
+  if (loading || !authReady) {
     return (
       <PageTransition>
         <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-24">
@@ -95,12 +108,50 @@ export function EventDetailPage() {
     );
   }
 
+  const isUnapproved =
+    event.approvalStatus === 'pending' || event.approvalStatus === 'rejected';
+  const canPreviewUnapproved = Boolean(
+    user && (user.uid === event.creatorUid || isAdmin),
+  );
+
+  if (isUnapproved && !canPreviewUnapproved) {
+    return (
+      <PageTransition>
+        <div className="mx-auto max-w-[780px] px-6 md:px-8 py-24">
+          <div className="border border-[#e2e2e2] bg-[#ffffff] p-10 md:p-14 rounded-2xl">
+            <p className="font-mono-tabular text-xs text-[#5e5e5e]">UNAVAILABLE</p>
+            <h1 className="mt-3 display-xl text-[#000000]">
+              This event is not publicly listed yet
+            </h1>
+            <p className="mt-4 text-sm text-[#5e5e5e] leading-relaxed">
+              This listing is currently under review and has not opened for public registration.
+            </p>
+            <div className="mt-8 flex gap-4">
+              <Link
+                to="/events"
+                className="bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3 rounded-full"
+              >
+                Browse Events
+              </Link>
+              <Link
+                to="/"
+                className="bg-[#efefef] active:bg-[#e2e2e2] text-[#000000] text-sm font-medium px-5 py-3 rounded-full"
+              >
+                Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const selectedTier = event.tiers.find((t) => t.id === selectedTierId) || event.tiers[0];
   const maxQty = selectedTier ? Math.min(10, selectedTier.remaining) : 1;
   const subtotalPaise = selectedTier ? selectedTier.pricePaise * quantity : 0;
 
   const handleProceed = () => {
-    if (!selectedTier || selectedTier.remaining < 1) return;
+    if (isUnapproved || !selectedTier || selectedTier.remaining < 1) return;
     navigate(
       `/checkout/${event.slug}?tier=${encodeURIComponent(selectedTier.id)}&qty=${quantity}`,
     );
@@ -108,6 +159,28 @@ export function EventDetailPage() {
 
   return (
     <PageTransition>
+      {isUnapproved ? (
+        <div
+          role="status"
+          className={`w-full border-b px-6 md:px-8 py-3.5 text-xs ${
+            event.approvalStatus === 'rejected'
+              ? 'border-[#b42318]/30 bg-[#ffffff] text-[#b42318]'
+              : 'border-[#e2e2e2] bg-[#f3f3f3] text-[#000000]'
+          }`}
+        >
+          <div className="mx-auto max-w-[1200px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="font-medium">
+              {event.approvalStatus === 'rejected'
+                ? 'Rejected by admin. This listing is hidden from the public directory.'
+                : 'Draft preview: Pending admin approval. Public bookings will open once approved.'}
+            </p>
+            {event.reviewNote ? (
+              <p className="text-xs opacity-85">Note: {event.reviewNote}</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <div className="w-full border-b border-[#e2e2e2] bg-[#ffffff]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-10 md:py-14">
           <Link
@@ -343,10 +416,11 @@ export function EventDetailPage() {
 
                   <button
                     type="button"
+                    disabled={isUnapproved}
                     onClick={handleProceed}
-                    className="mt-6 w-full bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3.5 rounded-xl"
+                    className="mt-6 w-full bg-[#000000] active:bg-[#282828] disabled:opacity-45 text-[#ffffff] text-sm font-medium px-5 py-3.5 rounded-xl"
                   >
-                    Continue to Checkout
+                    {isUnapproved ? 'Bookings Open After Approval' : 'Continue to Checkout'}
                   </button>
                 </div>
               ) : (

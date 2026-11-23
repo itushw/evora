@@ -109,6 +109,8 @@ export async function createPaymentIntent(payload: {
     pricePaise: number;
     capacity: number;
     remaining: number;
+    payoutVpa?: string;
+    hostOrganization?: string;
   };
 }): Promise<PaymentIntentResponse> {
   const res = await fetch(buildApiUrl('/api/payments/create-intent'), {

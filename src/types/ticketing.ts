@@ -31,6 +31,8 @@ export const EVENT_CATEGORIES = [
 
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 
+export type EventApprovalStatus = 'pending' | 'approved' | 'rejected';
+
 export interface EvoraEvent {
   id: string;
   slug: string;
@@ -55,6 +57,11 @@ export interface EvoraEvent {
   tiers: TicketTier[];
   featured?: boolean;
   refundPolicySummary: string;
+  payoutVpa?: string;
+  approvalStatus?: EventApprovalStatus;
+  reviewNote?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
   creatorUid?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -135,6 +142,7 @@ export interface CreateEventPayload {
   hostName: string;
   hostOrganization: string;
   hostEmail: string;
+  payoutVpa?: string;
   refundPolicySummary: string;
   tiers: Array<{
     name: string;
