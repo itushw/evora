@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, ArrowRight } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { EventImage } from '../components/EventImage.tsx';
+import { usePlatformSettings } from '../context/PlatformSettingsContext.tsx';
 import { listMergedEvents } from '../lib/firestoreStore.ts';
 import { formatInr } from '../lib/format.ts';
 import { SEED_EVENTS } from '../data/seedEvents.ts';
@@ -20,27 +21,30 @@ function totalRemaining(event: EvoraEvent): number {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { settings } = usePlatformSettings();
 
-  const [events, setEvents] = useState<EvoraEvent[]>(SEED_EVENTS);
+  const [events, setEvents] = useState<EvoraEvent[]>(
+    settings.showSeedEvents ? SEED_EVENTS : [],
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   useEffect(() => {
     let mounted = true;
-    listMergedEvents()
+    listMergedEvents({ includeSeedEvents: settings.showSeedEvents })
       .then((data) => {
-        if (mounted && data.length > 0) {
+        if (mounted) {
           setEvents(data);
         }
       })
       .catch(() => {
-        // Keep seeded events cleanly
+        // Keep current events cleanly
       });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [settings.showSeedEvents]);
 
   const cities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -101,13 +105,37 @@ export function HomePage() {
         />
 
         <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-8 pt-20 pb-16 md:pt-28 md:pb-24">
+          {settings.announcementEnabled && settings.announcementText ? (
+            <div className="mb-8 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-white/25 glass-dark px-4 py-2 text-xs text-[#ffffff]">
+              <span>{settings.announcementText}</span>
+              {settings.announcementLinkLabel && settings.announcementLinkUrl ? (
+                settings.announcementLinkUrl.startsWith('http') ? (
+                  <a
+                    href={settings.announcementLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline text-[#ffffff]"
+                  >
+                    {settings.announcementLinkLabel}
+                  </a>
+                ) : (
+                  <Link
+                    to={settings.announcementLinkUrl}
+                    className="font-semibold underline text-[#ffffff]"
+                  >
+                    {settings.announcementLinkLabel}
+                  </Link>
+                )
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             <div className="lg:col-span-7">
               <h1 className="display-xxl text-[#ffffff]">
-                Find your next event on campus and around the city.
+                {settings.heroHeadline}
               </h1>
               <p className="mt-5 text-base text-[#f3f3f3] max-w-lg leading-relaxed">
-                Browse upcoming college fests, hackathons, arts showcases, workshops, and live nights. Book your spot and get your pass right away.
+                {settings.heroSubheadline}
               </p>
             </div>
 
@@ -355,10 +383,10 @@ export function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               <div className="lg:col-span-7">
                 <h2 className="display-xl text-[#ffffff]">
-                  Organizing a college fest or hackathon?
+                  {settings.ctaHeadline}
                 </h2>
                 <p className="mt-4 text-base text-[#e2e2e2] max-w-xl leading-relaxed">
-                  List your event, set ticket tiers or free RSVPs, and manage registrations in minutes.
+                  {settings.ctaSubheadline}
                 </p>
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
@@ -367,12 +395,14 @@ export function HomePage() {
                   >
                     Host an Event
                   </Link>
-                  <Link
-                    to="/pricing"
-                    className="inline-flex items-center justify-center border border-white/30 bg-white/10 active:bg-white/20 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full"
-                  >
-                    View Pricing
-                  </Link>
+                  {settings.showPricingPage ? (
+                    <Link
+                      to="/pricing"
+                      className="inline-flex items-center justify-center border border-white/30 bg-white/10 active:bg-white/20 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full"
+                    >
+                      View Pricing
+                    </Link>
+                  ) : null}
                 </div>
               </div>
               <div className="lg:col-span-5">

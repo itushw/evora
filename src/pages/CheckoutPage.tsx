@@ -5,6 +5,7 @@ import { PageTransition } from '../components/PageTransition.tsx';
 import { QrCodeGraphic } from '../components/QrCodeGraphic.tsx';
 import { AuthCard } from '../components/AuthCard.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { usePlatformSettings } from '../context/PlatformSettingsContext.tsx';
 import { ApiError, confirmPayment, createPaymentIntent } from '../lib/api.ts';
 import { getMergedEventBySlug, persistConfirmedOrder } from '../lib/firestoreStore.ts';
 import { formatInr, saveOrderId } from '../lib/format.ts';
@@ -15,6 +16,7 @@ export function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, authReady } = useAuth();
+  const { settings } = usePlatformSettings();
 
   const [event, setEvent] = useState<EvoraEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,10 +127,38 @@ export function CheckoutPage() {
     );
   }
 
+  if (!settings.allowBookings) {
+    return (
+      <PageTransition>
+        <div className="mx-auto max-w-[760px] px-6 md:px-8 py-24">
+          <div className="border border-[#e2e2e2] bg-[#ffffff] p-10 rounded-2xl">
+            <p className="font-mono-tabular text-xs text-[#5e5e5e]">BOOKINGS PAUSED</p>
+            <h1 className="mt-3 display-xl text-[#000000]">
+              Checkout is temporarily paused
+            </h1>
+            <p className="mt-4 text-sm text-[#5e5e5e] leading-relaxed">
+              {settings.bookingsPausedMessage ||
+                'Ticket bookings are temporarily paused by the administrator.'}
+            </p>
+            <Link
+              to="/events"
+              className="mt-6 inline-block bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3 rounded-full"
+            >
+              Browse Events
+            </Link>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const selectedTier = event.tiers.find((t) => t.id === tierId) || event.tiers[0];
   const estimatedSubtotal = selectedTier ? selectedTier.pricePaise * quantity : 0;
-  const estimatedPlatform = 0;
-  const estimatedTotal = estimatedSubtotal;
+  const estimatedPlatform =
+    estimatedSubtotal > 0 && settings.platformFeePercent > 0
+      ? Math.round((estimatedSubtotal * settings.platformFeePercent) / 100)
+      : 0;
+  const estimatedTotal = estimatedSubtotal + estimatedPlatform;
 
   const displaySubtotal = intent ? intent.subtotalPaise : estimatedSubtotal;
   const displayPlatform = intent ? intent.platformFeePaise : estimatedPlatform;
@@ -154,6 +184,9 @@ export function CheckoutPage() {
         buyerEmail,
         buyerPhone,
         userId: user.uid,
+        platformFeePercent: settings.platformFeePercent,
+        fallbackPayoutVpa: settings.defaultPayoutVpa || undefined,
+        fallbackPayeeName: settings.defaultPayeeName || undefined,
         eventSnapshot: {
           id: event.id,
           slug: event.slug,

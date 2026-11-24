@@ -93,7 +93,7 @@
     },
     "TicketOrder": {
       "title": "TicketOrder",
-      "description": "Confirmed or cancelled attendee ticket booking owned by a Firebase Auth user.",
+      "description": "Confirmed or cancelled attendee ticket booking owned by a Firebase Auth user and manageable by Evora admins.",
       "type": "object",
       "properties": {
         "orderId": { "type": "string" },
@@ -153,32 +153,85 @@
     },
     "AdminRecord": {
       "title": "AdminRecord",
-      "description": "Allowlist marker document granting administrator moderation rights to a Firebase Auth UID.",
+      "description": "Allowlist marker document granting administrator control rights to a Firebase Auth UID.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "grantedAt": { "type": "string", "format": "date-time" }
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 160 },
+        "grantedAt": { "type": "string", "format": "date-time", "maxLength": 40 }
       },
       "required": ["uid", "email", "grantedAt"]
+    },
+    "PlatformSettings": {
+      "title": "PlatformSettings",
+      "description": "Singleton platform configuration document (settings/platform) controlling live site copy, switches, commission, and fallback UPI.",
+      "type": "object",
+      "properties": {
+        "heroHeadline": { "type": "string", "maxLength": 180 },
+        "heroSubheadline": { "type": "string", "maxLength": 400 },
+        "ctaHeadline": { "type": "string", "maxLength": 180 },
+        "ctaSubheadline": { "type": "string", "maxLength": 400 },
+        "announcementEnabled": { "type": "boolean" },
+        "announcementText": { "type": "string", "maxLength": 240 },
+        "announcementLinkLabel": { "type": "string", "maxLength": 60 },
+        "announcementLinkUrl": { "type": "string", "maxLength": 240 },
+        "showPricingPage": { "type": "boolean" },
+        "showSeedEvents": { "type": "boolean" },
+        "autoApproveEvents": { "type": "boolean" },
+        "allowEventSubmissions": { "type": "boolean" },
+        "allowBookings": { "type": "boolean" },
+        "bookingsPausedMessage": { "type": "string", "maxLength": 260 },
+        "platformFeePercent": { "type": "number", "minimum": 0, "maximum": 20 },
+        "defaultPayoutVpa": { "type": "string", "maxLength": 100 },
+        "defaultPayeeName": { "type": "string", "maxLength": 80 },
+        "supportEmail": { "type": "string", "maxLength": 160 },
+        "updatedAt": { "type": "string", "format": "date-time", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 160 }
+      },
+      "required": [
+        "heroHeadline",
+        "heroSubheadline",
+        "ctaHeadline",
+        "ctaSubheadline",
+        "announcementEnabled",
+        "announcementText",
+        "announcementLinkLabel",
+        "announcementLinkUrl",
+        "showPricingPage",
+        "showSeedEvents",
+        "autoApproveEvents",
+        "allowEventSubmissions",
+        "allowBookings",
+        "bookingsPausedMessage",
+        "platformFeePercent",
+        "defaultPayoutVpa",
+        "defaultPayeeName",
+        "supportEmail",
+        "updatedAt",
+        "updatedBy"
+      ]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Private user account profiles readable and writable only by the owning user."
+      "description": "User account profiles readable/writable by the owning user and manageable by Evora administrators."
     },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminRecord" },
-      "description": "Admin role marker documents readable only by the matching user and never client-writable."
+      "description": "Co-admin allowlist documents readable by the matching user and fully manageable by Evora administrators."
     },
     "/events/{eventId}": {
       "schema": { "$ref": "#/entities/EvoraEvent" },
-      "description": "Event listings created by authenticated organizers and moderated by Evora admins."
+      "description": "Event listings created by authenticated organizers and fully controlled by Evora administrators."
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/TicketOrder" },
-      "description": "Private attendee ticket orders and issued passes readable only by the owning user."
+      "description": "Attendee ticket orders and issued passes readable by the owning attendee and manageable by Evora administrators."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/PlatformSettings" },
+      "description": "Publicly readable platform configuration singleton (settings/platform) writable exclusively by Evora administrators."
     }
   }
 }

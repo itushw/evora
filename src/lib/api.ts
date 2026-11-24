@@ -95,6 +95,9 @@ export async function createPaymentIntent(payload: {
   buyerEmail: string;
   buyerPhone: string;
   userId?: string;
+  platformFeePercent?: number;
+  fallbackPayoutVpa?: string;
+  fallbackPayeeName?: string;
   eventSnapshot?: {
     id: string;
     slug: string;

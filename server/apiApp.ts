@@ -127,12 +127,20 @@ function sanitizeVpa(raw?: string): string | undefined {
   return UPI_VPA_REGEX.test(cleaned) ? cleaned : undefined;
 }
 
-function computeTotalsPaise(unitPricePaise: number, quantity: number) {
+function computeTotalsPaise(unitPricePaise: number, quantity: number, feePercent = 0) {
   const subtotalPaise = unitPricePaise * quantity;
+  const clampedPercent =
+    typeof feePercent === 'number' && Number.isFinite(feePercent)
+      ? Math.max(0, Math.min(20, feePercent))
+      : 0;
+  const platformFeePaise =
+    subtotalPaise > 0 && clampedPercent > 0
+      ? Math.round((subtotalPaise * clampedPercent) / 100)
+      : 0;
   return {
     subtotalPaise,
-    platformFeePaise: 0,
-    totalPaise: subtotalPaise,
+    platformFeePaise,
+    totalPaise: subtotalPaise + platformFeePaise,
   };
 }
 
@@ -142,14 +150,18 @@ function buildDynamicPaymentQrPayload(
   eventTitle: string,
   hostPayoutVpa?: string,
   hostOrganization?: string,
+  fallbackPayoutVpa?: string,
+  fallbackPayeeName?: string,
 ): string {
   const amountRupees = (totalPaise / 100).toFixed(2);
   const shortNote = `Evora ${eventTitle}`.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 42).trim();
-  const payeeVpa = sanitizeVpa(hostPayoutVpa) || MERCHANT_SETTLEMENT_VPA;
-  const payeeName =
-    sanitizeVpa(hostPayoutVpa) && hostOrganization?.trim()
-      ? hostOrganization.trim().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 40).trim() || 'Event Organizer'
-      : 'Evora by Browns Squad';
+  const validHostVpa = sanitizeVpa(hostPayoutVpa);
+  const validFallbackVpa = sanitizeVpa(fallbackPayoutVpa);
+  const payeeVpa = validHostVpa || validFallbackVpa || MERCHANT_SETTLEMENT_VPA;
+  const rawName = validHostVpa
+    ? hostOrganization?.trim() || 'Event Organizer'
+    : fallbackPayeeName?.trim() || 'Evora by Browns Squad';
+  const payeeName = rawName.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 40).trim() || 'Evora by Browns Squad';
   const params = new URLSearchParams({
     pa: payeeVpa,
     pn: payeeName,
@@ -580,6 +592,9 @@ export function createApiApp(): Express {
       buyerEmail,
       buyerPhone,
       userId,
+      platformFeePercent,
+      fallbackPayoutVpa,
+      fallbackPayeeName,
       eventSnapshot,
     } = req.body as {
       eventSlug?: string;
@@ -589,6 +604,9 @@ export function createApiApp(): Express {
       buyerEmail?: string;
       buyerPhone?: string;
       userId?: string;
+      platformFeePercent?: number;
+      fallbackPayoutVpa?: string;
+      fallbackPayeeName?: string;
       eventSnapshot?: EventSnapshot & {
         pricePaise: number;
         payoutVpa?: string;
@@ -645,7 +663,7 @@ export function createApiApp(): Express {
       return;
     }
 
-    const totals = computeTotalsPaise(resolvedPricePaise, qty);
+    const totals = computeTotalsPaise(resolvedPricePaise, qty, platformFeePercent);
     const intentId = `EVRINT${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
@@ -657,6 +675,8 @@ export function createApiApp(): Express {
             resolvedTitle,
             resolvedPayoutVpa,
             resolvedHostOrg,
+            fallbackPayoutVpa,
+            fallbackPayeeName,
           )
         : null;
 

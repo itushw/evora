@@ -151,3 +151,42 @@ export interface CreateEventPayload {
     capacity: number;
   }>;
 }
+
+export interface PlatformSettings {
+  heroHeadline: string;
+  heroSubheadline: string;
+  ctaHeadline: string;
+  ctaSubheadline: string;
+  announcementEnabled: boolean;
+  announcementText: string;
+  announcementLinkLabel: string;
+  announcementLinkUrl: string;
+  showPricingPage: boolean;
+  showSeedEvents: boolean;
+  autoApproveEvents: boolean;
+  allowEventSubmissions: boolean;
+  allowBookings: boolean;
+  bookingsPausedMessage: string;
+  platformFeePercent: number;
+  defaultPayoutVpa: string;
+  defaultPayeeName: string;
+  supportEmail: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface UserProfileRecord {
+  uid: string;
+  displayName: string;
+  email: string;
+  provider: 'password' | 'google';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminRecord {
+  uid: string;
+  email: string;
+  grantedAt: string;
+}
+

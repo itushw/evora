@@ -2,12 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { usePlatformSettings } from '../context/PlatformSettingsContext.tsx';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { label: 'Events', to: '/events' },
   { label: 'Passes', to: '/passes' },
   { label: 'Pricing', to: '/pricing' },
@@ -17,8 +18,13 @@ const NAV_LINKS = [
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { user, authReady, openAuthModal, signOutUser } = useAuth();
+  const { settings } = usePlatformSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const navLinks = settings.showPricingPage
+    ? BASE_NAV_LINKS
+    : BASE_NAV_LINKS.filter((item) => item.to !== '/pricing');
 
   const isHome = location.pathname === '/';
 
@@ -80,7 +86,7 @@ export function Layout({ children }: LayoutProps) {
             aria-label="Primary navigation"
             className="hidden md:flex items-center gap-8 text-[15px] font-medium"
           >
-            {NAV_LINKS.map((item) => {
+            {navLinks.map((item) => {
               const active = isActive(item.to);
               return (
                 <Link
@@ -144,7 +150,7 @@ export function Layout({ children }: LayoutProps) {
         {mobileMenuOpen ? (
           <div className="relative z-10 md:hidden border-t border-white/15 px-6 py-6">
             <nav className="flex flex-col gap-4">
-              {NAV_LINKS.map((item) => (
+              {navLinks.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -189,7 +195,35 @@ export function Layout({ children }: LayoutProps) {
         ) : null}
       </header>
 
-      <main className="relative z-0 flex-1 w-full bg-[#ffffff]">{children}</main>
+      <main className="relative z-0 flex-1 w-full bg-[#ffffff]">
+        {settings.announcementEnabled && settings.announcementText && !isHome ? (
+          <div className="no-print w-full border-b border-[#e2e2e2] bg-[#f3f3f3] text-[#000000]">
+            <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-xs">
+              <span>{settings.announcementText}</span>
+              {settings.announcementLinkLabel && settings.announcementLinkUrl ? (
+                settings.announcementLinkUrl.startsWith('http') ? (
+                  <a
+                    href={settings.announcementLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline text-[#000000]"
+                  >
+                    {settings.announcementLinkLabel}
+                  </a>
+                ) : (
+                  <Link
+                    to={settings.announcementLinkUrl}
+                    className="font-semibold underline text-[#000000]"
+                  >
+                    {settings.announcementLinkLabel}
+                  </Link>
+                )
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+        {children}
+      </main>
 
       <footer className="no-print w-full bg-[#000000] text-[#ffffff] mt-24">
         <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-16">
@@ -229,7 +263,7 @@ export function Layout({ children }: LayoutProps) {
               </h2>
               <ul className="space-y-3 text-sm text-[#afafaf]">
                 <li><Link to="/host">Host an Event</Link></li>
-                <li><Link to="/pricing">Pricing</Link></li>
+                {settings.showPricingPage ? <li><Link to="/pricing">Pricing</Link></li> : null}
                 <li><Link to="/passes">My Passes</Link></li>
               </ul>
             </div>

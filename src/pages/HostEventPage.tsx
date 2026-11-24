@@ -8,6 +8,7 @@ import {
   type SelectedVenuePlace,
 } from '../components/VenueAutocompleteInput.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { usePlatformSettings } from '../context/PlatformSettingsContext.tsx';
 import { AVAILABLE_COVERS } from '../data/seedEvents.ts';
 import { createEvent } from '../lib/api.ts';
 import { persistHostedEvent } from '../lib/firestoreStore.ts';
@@ -25,6 +26,7 @@ interface DraftTier {
 
 export function HostEventPage() {
   const { user, authReady } = useAuth();
+  const { settings } = usePlatformSettings();
 
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -204,7 +206,8 @@ export function HostEventPage() {
         })),
       });
 
-      const saved = await persistHostedEvent(created, user.uid);
+      const initialStatus = settings.autoApproveEvents ? 'approved' : 'pending';
+      const saved = await persistHostedEvent(created, user.uid, initialStatus);
       setSubmittedEvent(saved);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
@@ -229,6 +232,26 @@ export function HostEventPage() {
         <div className="mx-auto max-w-[1040px] px-6 md:px-8 py-14 md:py-16">
           {!authReady ? (
             <p className="text-sm text-[#5e5e5e]">Checking your account...</p>
+          ) : !settings.allowEventSubmissions ? (
+            <div className="mx-auto max-w-xl border border-[#e2e2e2] glass-light p-8 md:p-12 rounded-2xl space-y-4">
+              <p className="font-mono-tabular text-xs font-semibold uppercase tracking-wide text-[#5e5e5e]">
+                Submissions Paused
+              </p>
+              <h2 className="display-xl text-[#000000]">
+                New event submissions are temporarily paused
+              </h2>
+              <p className="text-sm text-[#5e5e5e] leading-relaxed">
+                The platform administrator has paused new event hosting right now. Check back soon or browse live events.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/events"
+                  className="inline-flex items-center justify-center bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-5 py-3 rounded-full"
+                >
+                  Browse Events
+                </Link>
+              </div>
+            </div>
           ) : !user ? (
             <div className="mx-auto max-w-md">
               <AuthCard
@@ -243,13 +266,19 @@ export function HostEventPage() {
               </div>
               <div>
                 <p className="font-mono-tabular text-xs font-semibold uppercase tracking-wide text-[#5e5e5e]">
-                  Pending Admin Review
+                  {submittedEvent.approvalStatus === 'approved'
+                    ? 'Published Live'
+                    : 'Pending Admin Review'}
                 </p>
                 <h2 className="mt-2 display-xl text-[#000000]">
-                  Your event has been submitted
+                  {submittedEvent.approvalStatus === 'approved'
+                    ? 'Your event is live'
+                    : 'Your event has been submitted'}
                 </h2>
                 <p className="mt-3 text-sm text-[#5e5e5e] leading-relaxed">
-                  {submittedEvent.title} is now queued for review. Once approved by an Evora administrator, it will appear in the public directory and open for attendee bookings.
+                  {submittedEvent.approvalStatus === 'approved'
+                    ? `${submittedEvent.title} is now live in the public directory and ready for attendee bookings.`
+                    : `${submittedEvent.title} is now queued for review. Once approved by an Evora administrator, it will appear in the public directory and open for attendee bookings.`}
                 </p>
               </div>
 
@@ -786,6 +815,10 @@ export function HostEventPage() {
                     Submissions are reviewed before going public. By submitting you agree to the Evora{' '}
                     <Link to="/terms" className="text-[#000000] underline">
                       Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link to="/privacy" className="text-[#000000] underline">
+                      Privacy Policy
                     </Link>
                     .
                   </p>

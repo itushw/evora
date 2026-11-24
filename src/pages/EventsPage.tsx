@@ -4,6 +4,7 @@ import { Search, List, Map as MapIcon } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { EventImage } from '../components/EventImage.tsx';
 import { EventsMapView } from '../components/EventsMapView.tsx';
+import { usePlatformSettings } from '../context/PlatformSettingsContext.tsx';
 import { listMergedEvents } from '../lib/firestoreStore.ts';
 import { formatInr } from '../lib/format.ts';
 import { SEED_EVENTS } from '../data/seedEvents.ts';
@@ -13,7 +14,10 @@ const CATEGORIES = ['All', ...EVENT_CATEGORIES] as const;
 
 export function EventsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [events, setEvents] = useState<EvoraEvent[]>(SEED_EVENTS);
+  const { settings } = usePlatformSettings();
+  const [events, setEvents] = useState<EvoraEvent[]>(
+    settings.showSeedEvents ? SEED_EVENTS : [],
+  );
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [category, setCategory] = useState<string>(searchParams.get('category') || 'All');
   const [city, setCity] = useState<string>(searchParams.get('city') || 'All');
@@ -41,7 +45,13 @@ export function EventsPage() {
     let active = true;
     setLoading(true);
     setErrorMessage('');
-    listMergedEvents({ q: query, category, city, sort })
+    listMergedEvents({
+      q: query,
+      category,
+      city,
+      sort,
+      includeSeedEvents: settings.showSeedEvents,
+    })
       .then((list) => {
         if (active) setEvents(list);
       })
@@ -59,7 +69,7 @@ export function EventsPage() {
     return () => {
       active = false;
     };
-  }, [query, category, city, sort]);
+  }, [query, category, city, sort, settings.showSeedEvents]);
 
   const updateUrlFilters = (next: {
     q?: string;
@@ -84,10 +94,12 @@ export function EventsPage() {
 
   const cities = useMemo(() => {
     const unique = new Set<string>(['All']);
-    SEED_EVENTS.forEach((e) => unique.add(e.city));
+    if (settings.showSeedEvents) {
+      SEED_EVENTS.forEach((e) => unique.add(e.city));
+    }
     events.forEach((e) => unique.add(e.city));
     return Array.from(unique);
-  }, [events]);
+  }, [events, settings.showSeedEvents]);
 
   return (
     <PageTransition>

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'motion/react';
 import { X } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext.tsx';
+import { PlatformSettingsProvider } from './context/PlatformSettingsContext.tsx';
 import { MapsProvider } from './components/MapsProvider.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { Layout } from './components/Layout.tsx';
@@ -111,18 +112,20 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <MapsProvider>
-          <MotionConfig reducedMotion="user">
-            <BrowserRouter>
-              <ScrollToTopOnRouteChange />
-              <MapsQuotaBanner />
-              <Layout>
-                <AnimatedRoutes />
-              </Layout>
-              <AuthModal />
-            </BrowserRouter>
-          </MotionConfig>
-        </MapsProvider>
+        <PlatformSettingsProvider>
+          <MapsProvider>
+            <MotionConfig reducedMotion="user">
+              <BrowserRouter>
+                <ScrollToTopOnRouteChange />
+                <MapsQuotaBanner />
+                <Layout>
+                  <AnimatedRoutes />
+                </Layout>
+                <AuthModal />
+              </BrowserRouter>
+            </MotionConfig>
+          </MapsProvider>
+        </PlatformSettingsProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

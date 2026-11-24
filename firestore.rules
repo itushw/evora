@@ -11,8 +11,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isGoogleSso() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
     function isAdmin() {
-      return isSignedIn() && (
+      return isGoogleSso() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
         || (
           request.auth.token.email == 'brownsquad67@gmail.com'
@@ -21,12 +26,21 @@ service cloud.firestore {
       );
     }
 
+    function isAutoApproveEnabled() {
+      return exists(/databases/$(database)/documents/settings/platform)
+        && get(/databases/$(database)/documents/settings/platform).data.autoApproveEvents == true;
+    }
+
     function isValidId(id) {
       return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
 
     function isNonEmptyString(val, minLen, maxLen) {
       return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isBoundedString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
     }
 
     function isValidOptionalString(data, field, maxLen) {
@@ -47,6 +61,7 @@ service cloud.firestore {
         && val.size() <= 260000
         && (
           (val.size() >= 12 && val[0:12] == '/src/assets/')
+          || (val.size() >= 8 && val[0:8] == '/assets/')
           || val[0:8] == 'https://'
           || (val.size() >= 24 && (
             val[0:23] == 'data:image/jpeg;base64,'
@@ -85,6 +100,55 @@ service cloud.firestore {
         && isNonEmptyString(newData.displayName, 1, 100)
         && newData.provider in ['password', 'google']
         && isNonEmptyString(newData.updatedAt, 10, 40);
+    }
+
+    function isValidAdminRecord(data, adminId) {
+      return data.keys().hasAll(['uid', 'email', 'grantedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'grantedAt'])
+        && data.uid == adminId
+        && isNonEmptyString(data.email, 3, 160)
+        && isNonEmptyString(data.grantedAt, 10, 40);
+    }
+
+    function isValidPlatformSettings(data) {
+      return data.keys().hasAll([
+          'heroHeadline', 'heroSubheadline', 'ctaHeadline', 'ctaSubheadline',
+          'announcementEnabled', 'announcementText', 'announcementLinkLabel',
+          'announcementLinkUrl', 'showPricingPage', 'showSeedEvents',
+          'autoApproveEvents', 'allowEventSubmissions', 'allowBookings',
+          'bookingsPausedMessage', 'platformFeePercent', 'defaultPayoutVpa',
+          'defaultPayeeName', 'supportEmail', 'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'heroHeadline', 'heroSubheadline', 'ctaHeadline', 'ctaSubheadline',
+          'announcementEnabled', 'announcementText', 'announcementLinkLabel',
+          'announcementLinkUrl', 'showPricingPage', 'showSeedEvents',
+          'autoApproveEvents', 'allowEventSubmissions', 'allowBookings',
+          'bookingsPausedMessage', 'platformFeePercent', 'defaultPayoutVpa',
+          'defaultPayeeName', 'supportEmail', 'updatedAt', 'updatedBy'
+        ])
+        && isNonEmptyString(data.heroHeadline, 1, 180)
+        && isBoundedString(data.heroSubheadline, 400)
+        && isBoundedString(data.ctaHeadline, 180)
+        && isBoundedString(data.ctaSubheadline, 400)
+        && data.announcementEnabled is bool
+        && isBoundedString(data.announcementText, 240)
+        && isBoundedString(data.announcementLinkLabel, 60)
+        && isBoundedString(data.announcementLinkUrl, 240)
+        && data.showPricingPage is bool
+        && data.showSeedEvents is bool
+        && data.autoApproveEvents is bool
+        && data.allowEventSubmissions is bool
+        && data.allowBookings is bool
+        && isBoundedString(data.bookingsPausedMessage, 260)
+        && data.platformFeePercent is number
+        && data.platformFeePercent >= 0
+        && data.platformFeePercent <= 20
+        && isBoundedString(data.defaultPayoutVpa, 100)
+        && isBoundedString(data.defaultPayeeName, 80)
+        && isBoundedString(data.supportEmail, 160)
+        && isNonEmptyString(data.updatedAt, 10, 40)
+        && isNonEmptyString(data.updatedBy, 1, 160);
     }
 
     function isValidEventDoc(data, eventId) {
@@ -181,43 +245,80 @@ service cloud.firestore {
         && data.passes is list && data.passes.size() == data.quantity;
     }
 
-    match /users/{userId} {
-      allow get: if isOwner(userId);
+    function isValidOrderAdminUpdate(newData, oldData) {
+      return newData.diff(oldData).affectedKeys().hasOnly(['status', 'refundedAt', 'passes'])
+        && newData.orderId == oldData.orderId
+        && newData.intentId == oldData.intentId
+        && newData.userId == oldData.userId
+        && newData.createdAt == oldData.createdAt
+        && newData.eventId == oldData.eventId
+        && newData.currency == oldData.currency
+        && newData.status in ['confirmed', 'refunded']
+        && newData.passes is list
+        && newData.passes.size() == oldData.passes.size()
+        && isValidOptionalString(newData, 'refundedAt', 40);
+    }
+
+    match /settings/{settingId} {
+      allow get: if settingId == 'platform';
       allow list: if false;
-      allow create: if isOwner(userId)
-        && isValidId(userId)
-        && isValidUserCreate(request.resource.data, userId);
-      allow update: if isOwner(userId)
-        && isValidUserUpdate(request.resource.data, resource.data);
+      allow create, update: if isAdmin()
+        && settingId == 'platform'
+        && isValidPlatformSettings(request.resource.data);
       allow delete: if false;
     }
 
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserCreate(request.resource.data, userId);
+      allow update: if (isOwner(userId) || isAdmin())
+        && isValidUserUpdate(request.resource.data, resource.data);
+      allow delete: if isAdmin();
+    }
+
     match /admins/{adminId} {
-      allow get: if isOwner(adminId);
-      allow list, write: if false;
+      allow get: if isOwner(adminId) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidId(adminId)
+        && isValidAdminRecord(request.resource.data, adminId);
+      allow delete: if isAdmin() && isValidId(adminId);
     }
 
     match /events/{eventId} {
       allow get, list: if true;
       allow create: if isSignedIn()
         && isValidId(eventId)
-        && request.resource.data.creatorUid == request.auth.uid
         && isValidEventDoc(request.resource.data, eventId)
-        && (isAdmin() || request.resource.data.approvalStatus == 'pending');
+        && (
+          isAdmin()
+          || (
+            request.resource.data.creatorUid == request.auth.uid
+            && (
+              request.resource.data.approvalStatus == 'pending'
+              || (request.resource.data.approvalStatus == 'approved' && isAutoApproveEnabled())
+            )
+          )
+        );
       allow update: if isSignedIn()
         && isValidEventDoc(request.resource.data, eventId)
         && request.resource.data.id == resource.data.id
-        && request.resource.data.slug == resource.data.slug
-        && request.resource.data.creatorUid == resource.data.creatorUid
         && request.resource.data.createdAt == resource.data.createdAt
         && (
           isAdmin()
           || (
             resource.data.creatorUid == request.auth.uid
+            && request.resource.data.slug == resource.data.slug
+            && request.resource.data.creatorUid == resource.data.creatorUid
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['approvalStatus', 'reviewNote', 'reviewedAt', 'reviewedBy'])
           )
           || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tiers', 'updatedAt'])
+            request.resource.data.slug == resource.data.slug
+            && request.resource.data.creatorUid == resource.data.creatorUid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tiers', 'updatedAt'])
             && request.resource.data.tiers.size() == resource.data.tiers.size()
           )
         );
@@ -226,17 +327,25 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn()
         && isValidId(orderId)
         && isValidOrderCreate(request.resource.data, orderId);
       allow update: if isSignedIn()
-        && resource.data.userId == request.auth.uid
-        && resource.data.status == 'confirmed'
-        && request.resource.data.status == 'refunded'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'refundedAt'])
-        && isNonEmptyString(request.resource.data.refundedAt, 10, 40);
-      allow delete: if false;
+        && (
+          (
+            resource.data.userId == request.auth.uid
+            && resource.data.status == 'confirmed'
+            && request.resource.data.status == 'refunded'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'refundedAt'])
+            && isNonEmptyString(request.resource.data.refundedAt, 10, 40)
+          )
+          || (
+            isAdmin()
+            && isValidOrderAdminUpdate(request.resource.data, resource.data)
+          )
+        );
+      allow delete: if isAdmin();
     }
 
     match /{document=**} {

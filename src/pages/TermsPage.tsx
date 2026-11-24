@@ -135,9 +135,11 @@ const TERMS_SECTIONS: LegalSection[] = [
   {
     id: 'governing-law',
     number: '14',
-    title: 'Governing Law, Jurisdiction & Updates',
+    title: 'Governing Law, Singapore Data Residency & Jurisdiction',
     paragraphs: [
-      'These Terms are governed by the laws of India without regard to conflict-of-law principles. Subject to mandatory local consumer protection provisions, courts located in Bengaluru, Karnataka shall have exclusive jurisdiction over disputes not resolved through good-faith written negotiation.',
+      'All Evora servers, databases, and stored platform records are hosted in the Republic of Singapore and are governed and protected exclusively by the laws of the Republic of Singapore, including the Personal Data Protection Act 2012 (PDPA).',
+      'Browns\' Squad strictly upholds Singapore jurisdictional sovereignty over all hosted records. Platform data, attendee information, and organizer records will not be disclosed or shared with any foreign law enforcement, investigative, or government authority outside the Republic of Singapore, including Indian law enforcement agencies, for any reason whatsoever. Disclosure may occur exclusively where compelled by a binding final order of a competent court of the Republic of Singapore.',
+      'These Terms are governed by and construed in accordance with the laws of the Republic of Singapore without regard to conflict-of-law principles, and the courts of the Republic of Singapore shall have exclusive jurisdiction over disputes not resolved through good-faith written negotiation.',
       'Browns\' Squad may revise these Terms periodically to reflect new platform capabilities or legal requirements. Updates take effect on the Effective Date listed at the top of this page and apply to bookings and listings created thereafter.',
     ],
   },

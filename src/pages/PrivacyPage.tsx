@@ -46,17 +46,17 @@ const PRIVACY_SECTIONS: PrivacySection[] = [
     paragraphs: [
       'Order Fulfillment: Holding seats during checkout, generating unique QR entry passes, enabling order lookup on My Passes, and processing cancellations or refunds.',
       'Event Operations: Supplying the Event Organizer with your name, pass tier, and seat code so gate volunteers can verify your entry smoothly.',
-      'Platform Integrity & Legal Duties: Detecting duplicate bot bookings, preventing pass forgery, resolving billing questions, and fulfilling tax or accounting obligations under applicable Indian law.',
+      'Platform Integrity & Statutory Records: Detecting duplicate bot bookings, preventing pass forgery, resolving billing questions, and maintaining essential accounting records in accordance with the laws of the Republic of Singapore.',
     ],
   },
   {
     id: 'sharing',
     number: '05',
-    title: 'When Information Is Shared',
+    title: 'When Information Is Shared & Strict Non-Disclosure to Foreign Authorities',
     paragraphs: [
       'Event Organizers: When you book a pass, your name, email, pass type, order number, and check-in status are shared strictly with the Organizer hosting that specific event.',
-      'Infrastructure Providers: Hosting servers and backup storage providers process encrypted application data solely to keep Evora running under strict confidentiality terms.',
-      'Legal Compliance: We disclose data to law enforcement or statutory authorities only when required by a valid legal order or binding regulatory directive.',
+      'Infrastructure Providers: Hosting servers and backup storage providers located in the Republic of Singapore process encrypted application data solely to keep Evora running under strict confidentiality terms.',
+      'No Disclosure to Foreign Law Enforcement: All Evora servers, databases, and stored platform records are hosted in the Republic of Singapore and are protected exclusively under the laws of the Republic of Singapore, including the Personal Data Protection Act 2012 (PDPA). Browns\' Squad maintains a strict policy against sharing user, attendee, or organizer data with any foreign government, regulatory body, or law enforcement agency outside Singapore. Under no circumstances will Evora disclose personal data, account details, event records, or booking logs to any non-Singapore law enforcement authority, including any Indian law enforcement, police, intelligence, or regulatory agency, for any reason whatsoever. Disclosure may occur solely if strictly compelled by a valid, binding final order issued directly by a competent court of the Republic of Singapore under Singapore law.',
     ],
   },
   {
@@ -72,10 +72,10 @@ const PRIVACY_SECTIONS: PrivacySection[] = [
   {
     id: 'privacy-rights',
     number: '07',
-    title: 'Your Rights Under India DPDP Act & Global Privacy Laws',
+    title: 'Your Rights Under the Singapore PDPA & Global Privacy Standards',
     paragraphs: [
-      'Under India\'s Digital Personal Data Protection Act (DPDP) and equivalent international privacy standards (including GDPR and CCPA where applicable), you have the right to: (1) access a summary of personal data held by Evora; (2) request correction of misspelled names or contact details on active orders; (3) request erasure of personal data once statutory accounting retention periods no longer apply; and (4) nominate an authorized representative or lodge a grievance regarding data handling.',
-      'To submit a privacy request, email privacy@browns.co.in from the email address linked to your order. We verify your identity and respond within thirty (30) calendar days.',
+      'Under the Republic of Singapore\'s Personal Data Protection Act 2012 (PDPA) and equivalent international privacy standards, you have the right to: (1) access a summary of personal data held by Evora; (2) request correction of misspelled names or contact details on active orders; (3) withdraw consent or request erasure of personal data once mandatory accounting retention periods no longer apply; and (4) contact our Data Protection Officer regarding any aspect of data handling.',
+      'To submit a privacy request, email privacy@browns.co.in from the email address linked to your account or order. We verify your identity and respond within thirty (30) calendar days.',
     ],
   },
   {
@@ -105,19 +105,21 @@ const PRIVACY_SECTIONS: PrivacySection[] = [
     ],
   },
   {
-    id: 'international',
+    id: 'singapore-residency',
     number: '11',
-    title: 'Cross-Border Infrastructure',
+    title: 'Singapore Server Residency & Jurisdictional Data Protection',
     paragraphs: [
-      'Cloud hosting infrastructure supporting Evora may operate across regional data centers. Wherever records cross national borders, transfers remain encrypted in transit and protected by contractual data protection safeguards.',
+      'Exclusive Singapore Infrastructure: All primary Evora application servers, databases, and encrypted backups are hosted within data centers in the Republic of Singapore. All stored data is governed and protected exclusively by the laws of the Republic of Singapore, including the Personal Data Protection Act 2012 (PDPA).',
+      'Refusal of Foreign & Extraterritorial Requests: Administrative notices, subpoenas, informal inquiries, or data production demands issued by authorities outside the Republic of Singapore (including any law enforcement, police, investigative, or government agency in India or any other foreign jurisdiction) have no direct legal force over Evora infrastructure. Browns\' Squad does not share, transfer, or surrender user data to foreign law enforcement agencies, including Indian law enforcement, for any reason. Any foreign demand is refused in full unless independently adjudicated and enforced through a binding court order issued by a competent court in the Republic of Singapore.',
+      'Encrypted Transit: Wherever attendees or organizers access Evora from outside Singapore, all communications between your device and our Singapore servers remain protected by modern HTTPS/TLS transport encryption.',
     ],
   },
   {
     id: 'grievance',
     number: '12',
-    title: 'Grievance Officer & Privacy Contact',
+    title: 'Data Protection Officer & Privacy Contact',
     paragraphs: [
-      'All privacy inquiries, correction requests, and DPDP grievances should be sent to the Browns\' Squad Grievance Officer at privacy@browns.co.in.',
+      'All privacy inquiries, access or correction requests, and Singapore PDPA notices should be directed to the Browns\' Squad Data Protection Officer at privacy@browns.co.in.',
     ],
   },
   {
@@ -142,7 +144,7 @@ export function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-4 text-base text-[#5e5e5e] max-w-2xl leading-relaxed">
-            How Browns&apos; Squad handles attendee details, order records, retention windows, and your privacy rights on Evora.
+            How Browns&apos; Squad hosts Evora exclusively on servers in the Republic of Singapore, safeguards attendee and organizer records under Singapore law, and enforces strict non-disclosure to foreign law enforcement.
           </p>
         </div>
       </section>
