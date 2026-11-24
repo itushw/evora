@@ -367,6 +367,12 @@ export function HomePage() {
                   >
                     Host an Event
                   </Link>
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center justify-center border border-white/30 bg-white/10 active:bg-white/20 text-[#ffffff] text-sm font-medium px-6 py-3.5 rounded-full"
+                  >
+                    View Pricing
+                  </Link>
                 </div>
               </div>
               <div className="lg:col-span-5">

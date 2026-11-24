@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition.tsx';
+import { AddToGoogleWalletButton } from '../components/AddToGoogleWalletButton.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { fetchOrderById, searchOrders } from '../lib/api.ts';
 import { getUserOrderById, listUserOrders } from '../lib/firestoreStore.ts';
@@ -229,7 +230,7 @@ export function PassesPage() {
                   </p>
                 </div>
 
-                <div className="md:col-span-5">
+                <div className="md:col-span-4">
                   <p className="text-base font-bold text-[#000000]">{order.eventTitle}</p>
                   <p className="mt-1 text-xs text-[#5e5e5e]">
                     {order.tierName} x {order.quantity} · {order.eventDateLabel} · {order.city}
@@ -249,10 +250,13 @@ export function PassesPage() {
                   </p>
                 </div>
 
-                <div className="md:col-span-2 flex md:justify-end">
+                <div className="md:col-span-3 flex flex-wrap md:justify-end items-start gap-2">
+                  {order.status === 'confirmed' && order.passes[0] ? (
+                    <AddToGoogleWalletButton order={order} pass={order.passes[0]} compact />
+                  ) : null}
                   <Link
                     to={`/tickets/${order.orderId}`}
-                    className="inline-flex items-center justify-center bg-[#000000] active:bg-[#282828] text-[#ffffff] text-sm font-medium px-4 py-2 rounded-full whitespace-nowrap"
+                    className="inline-flex items-center justify-center bg-[#efefef] active:bg-[#e2e2e2] text-[#000000] text-xs font-medium px-4 py-2 rounded-full whitespace-nowrap"
                   >
                     View Pass
                   </Link>

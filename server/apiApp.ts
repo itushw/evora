@@ -171,6 +171,111 @@ function isOriginAllowed(origin: string): boolean {
   return allowedList.includes(origin.toLowerCase());
 }
 
+function sanitizeWalletIdSegment(value: string): string {
+  const cleaned = value.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').slice(0, 60);
+  return cleaned || 'evora_item';
+}
+
+function base64UrlEncodeJson(obj: unknown): string {
+  return Buffer.from(JSON.stringify(obj), 'utf-8').toString('base64url');
+}
+
+function signRs256Jwt(payload: Record<string, unknown>, privateKeyPem: string): string {
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncodeJson(header);
+  const encodedPayload = base64UrlEncodeJson(payload);
+  const signingInput = `${encodedHeader}.${encodedPayload}`;
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(signingInput);
+  signer.end();
+  const signature = signer.sign(privateKeyPem).toString('base64url');
+  return `${signingInput}.${signature}`;
+}
+
+function buildGoogleWalletPassBundle(
+  order: TicketOrder,
+  pass: IssuedTicketPass,
+  issuerId: string,
+) {
+  const classSuffix = sanitizeWalletIdSegment(`evora_evt_${order.eventId || order.eventSlug}`);
+  const objectSuffix = sanitizeWalletIdSegment(`evora_pass_${order.orderId}_${pass.ticketId}`);
+  const classId = `${issuerId}.${classSuffix}`;
+  const objectId = `${issuerId}.${objectSuffix}`;
+
+  const eventTicketClass = {
+    id: classId,
+    issuerName: "Evora by Browns' Squad",
+    reviewStatus: 'UNDER_REVIEW',
+    eventName: {
+      defaultValue: {
+        language: 'en-US',
+        value: order.eventTitle.slice(0, 120),
+      },
+    },
+    venue: {
+      name: {
+        defaultValue: {
+          language: 'en-US',
+          value: order.venueName.slice(0, 120),
+        },
+      },
+      address: {
+        defaultValue: {
+          language: 'en-US',
+          value: `${order.venueAddress}, ${order.city}`.slice(0, 200),
+        },
+      },
+    },
+    hexBackgroundColor: '#000000',
+  };
+
+  const eventTicketObject = {
+    id: objectId,
+    classId,
+    state: 'ACTIVE',
+    ticketHolderName: pass.holderName.slice(0, 100),
+    ticketNumber: pass.ticketId,
+    seatInfo: {
+      section: {
+        defaultValue: {
+          language: 'en-US',
+          value: order.tierName.slice(0, 60),
+        },
+      },
+      seat: {
+        defaultValue: {
+          language: 'en-US',
+          value: pass.seatCode,
+        },
+      },
+    },
+    barcode: {
+      type: 'QR_CODE',
+      value: pass.qrPayload,
+      alternateText: pass.ticketId,
+    },
+    textModulesData: [
+      {
+        id: 'schedule',
+        header: 'DATE & TIME',
+        body: `${order.eventDateLabel} · ${order.eventTimeLabel}`,
+      },
+      {
+        id: 'order_ref',
+        header: 'ORDER ID',
+        body: `${order.orderId} (${order.paymentReference})`,
+      },
+    ],
+  };
+
+  return {
+    classId,
+    objectId,
+    eventTicketClass,
+    eventTicketObject,
+  };
+}
+
 export function createApiApp(): Express {
   const app = express();
   app.use(express.json({ limit: '2mb' }));
@@ -797,6 +902,106 @@ export function createApiApp(): Express {
     }
 
     res.json({ order });
+  });
+
+  // Generate an official Google Wallet Event Ticket save link (signed RS256 savetowallet JWT)
+  app.post('/api/wallet/google-pass', (req, res) => {
+    const { order: submittedOrder, orderId, ticketId, origin } = req.body as {
+      order?: TicketOrder;
+      orderId?: string;
+      ticketId?: string;
+      origin?: string;
+    };
+
+    const resolvedOrder: TicketOrder | undefined =
+      submittedOrder && submittedOrder.orderId
+        ? submittedOrder
+        : orderId
+          ? ordersStore.get(orderId.trim().toUpperCase())
+          : undefined;
+
+    if (!resolvedOrder || !Array.isArray(resolvedOrder.passes) || resolvedOrder.passes.length === 0) {
+      res.status(404).json({ error: 'Valid ticket order is required to build a Google Wallet pass.' });
+      return;
+    }
+
+    if (resolvedOrder.status === 'refunded') {
+      res.status(409).json({ error: 'Cancelled passes cannot be added to Google Wallet.' });
+      return;
+    }
+
+    const pass =
+      (ticketId
+        ? resolvedOrder.passes.find((p) => p.ticketId === ticketId)
+        : resolvedOrder.passes[0]) || resolvedOrder.passes[0];
+
+    const issuerId = (process.env.GOOGLE_WALLET_ISSUER_ID || '').trim();
+    const serviceAccountEmail = (process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL || '').trim();
+    const rawPrivateKey = (process.env.GOOGLE_WALLET_PRIVATE_KEY || '').trim();
+    const normalizedPrivateKey = rawPrivateKey.replace(/\\n/g, '\n');
+
+    const missingEnvVars: string[] = [];
+    if (!issuerId) missingEnvVars.push('GOOGLE_WALLET_ISSUER_ID');
+    if (!serviceAccountEmail) missingEnvVars.push('GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL');
+    if (!normalizedPrivateKey) missingEnvVars.push('GOOGLE_WALLET_PRIVATE_KEY');
+
+    const bundle = buildGoogleWalletPassBundle(
+      resolvedOrder,
+      pass,
+      issuerId || 'ISSUER_ID_REQUIRED',
+    );
+
+    if (missingEnvVars.length > 0) {
+      res.json({
+        ready: false,
+        reason: 'GOOGLE_WALLET_NOT_CONFIGURED',
+        missingEnvVars,
+        classId: bundle.classId,
+        objectId: bundle.objectId,
+        passPayload: {
+          eventTicketClass: bundle.eventTicketClass,
+          eventTicketObject: bundle.eventTicketObject,
+        },
+      });
+      return;
+    }
+
+    const requestOrigin =
+      (typeof origin === 'string' && origin.startsWith('http') ? origin : '') ||
+      (typeof req.headers.origin === 'string' ? req.headers.origin : '') ||
+      (process.env.APP_URL || 'https://evr.browns.co.in');
+
+    const claims = {
+      iss: serviceAccountEmail,
+      aud: 'google',
+      typ: 'savetowallet',
+      iat: Math.floor(Date.now() / 1000),
+      origins: [requestOrigin],
+      payload: {
+        eventTicketClasses: [bundle.eventTicketClass],
+        eventTicketObjects: [bundle.eventTicketObject],
+      },
+    };
+
+    try {
+      const token = signRs256Jwt(claims, normalizedPrivateKey);
+      res.json({
+        ready: true,
+        saveUrl: `https://pay.google.com/gp/v/save/${token}`,
+        classId: bundle.classId,
+        objectId: bundle.objectId,
+        passPayload: {
+          eventTicketClass: bundle.eventTicketClass,
+          eventTicketObject: bundle.eventTicketObject,
+        },
+      });
+    } catch (err) {
+      console.error('Google Wallet JWT signing error:', err);
+      res.status(500).json({
+        error: 'Google Wallet private key could not sign the pass. Verify GOOGLE_WALLET_PRIVATE_KEY format.',
+        code: 'WALLET_SIGN_ERROR',
+      });
+    }
   });
 
   app.all('/api/*', (_req, res) => {

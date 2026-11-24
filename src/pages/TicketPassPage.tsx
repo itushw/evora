@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Printer, Download } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition.tsx';
 import { QrCodeGraphic } from '../components/QrCodeGraphic.tsx';
+import { AddToGoogleWalletButton } from '../components/AddToGoogleWalletButton.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { fetchOrderById, refundOrder } from '../lib/api.ts';
 import { cancelUserOrderInFirestore, getUserOrderById } from '../lib/firestoreStore.ts';
@@ -217,6 +218,12 @@ export function TicketPassPage() {
                       <dd className="mt-1 text-[#5e5e5e]">{order.venueAddress}</dd>
                     </div>
                   </dl>
+
+                  {order.status === 'confirmed' ? (
+                    <div className="no-print pt-4 border-t border-[#e2e2e2]">
+                      <AddToGoogleWalletButton order={order} pass={pass} />
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="md:col-span-4 flex flex-col items-start md:items-end">

@@ -195,3 +195,35 @@ export async function fetchMapsRuntimeConfig(): Promise<{ configured: boolean; a
   if (!res.ok) return { configured: false, apiKey: '' };
   return (await res.json()) as { configured: boolean; apiKey: string };
 }
+
+export interface GoogleWalletPassResponse {
+  ready: boolean;
+  saveUrl?: string;
+  reason?: string;
+  missingEnvVars?: string[];
+  classId: string;
+  objectId: string;
+  passPayload: {
+    eventTicketClass: Record<string, unknown>;
+    eventTicketObject: Record<string, unknown>;
+  };
+}
+
+export async function createGoogleWalletPass(
+  order: TicketOrder,
+  ticketId: string,
+): Promise<GoogleWalletPassResponse> {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const res = await fetch(buildApiUrl('/api/wallet/google-pass'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      order,
+      orderId: order.orderId,
+      ticketId,
+      origin,
+    }),
+  });
+  return parseJsonResponse<GoogleWalletPassResponse>(res);
+}
+
